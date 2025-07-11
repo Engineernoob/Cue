@@ -19,7 +19,6 @@ document.getElementById("menu-btn")?.addEventListener("click", () => {
 });
 
 // --- Session Controls ---
-// Example functions to start/stop sessions (call these from your UI as needed)
 async function startSession(sessionType = "default") {
   try {
     const result = await ipcRenderer.invoke("start-session", {
@@ -57,8 +56,55 @@ function processIncomingText(text) {
     const question = match[0].trim();
     console.log("🧠 Auto-Query:", question);
     ipcRenderer?.send("send-llm-query", question);
+    appendMessage(question, "user");
   });
 }
+
+// --- Chat UI ---
+const chatWindow = document.getElementById("chat-window");
+const chatBox = document.getElementById("chat-input-box");
+const sendBtn = document.getElementById("chat-send-btn");
+const chatMessages = document.getElementById("chat-messages");
+
+function appendMessage(text, role = "user") {
+  if (!chatMessages) return;
+
+  const msg = document.createElement("div");
+  msg.className = `chat-message ${role}`;
+  msg.textContent = text;
+  msg.style.textAlign = role === "user" ? "right" : "left";
+  msg.style.opacity = role === "system" ? 0.7 : 1;
+  msg.style.marginBottom = "8px";
+  chatMessages.appendChild(msg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendChatMessage() {
+  const text = chatBox.value.trim();
+  if (!text) return;
+  appendMessage(text, "user");
+  ipcRenderer?.send("send-llm-query", text);
+  chatBox.value = "";
+}
+
+sendBtn?.addEventListener("click", sendChatMessage);
+
+chatBox?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+});
+
+// Toggle chat with Cmd+\ or Ctrl+\
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+    if (chatWindow) {
+      chatWindow.hidden = !chatWindow.hidden;
+      if (!chatWindow.hidden) chatBox?.focus();
+    }
+  }
+});
 
 // --- IPC Listeners ---
 ipcRenderer?.on("backend-status", (_e, status) => {
@@ -74,8 +120,10 @@ ipcRenderer?.on("backend-message", (_e, message) => {
       processIncomingText(message.text);
       break;
     case "llm_response_chunk":
+      appendMessage(message.text_chunk || "", "assistant");
+      break;
     case "llm_response_complete":
-      console.log("[LLM]", message.text || message.text_chunk);
+      appendMessage(message.text || "", "assistant");
       break;
     case "transcript_error":
     case "ocr_error":
@@ -91,7 +139,7 @@ ipcRenderer?.on("llm-response-error", (_e, error) => {
   console.error("[LLM Error]", error.message);
 });
 
-// Show coaching prompts pushed from main/backend
+// Show coaching prompts
 ipcRenderer.on("show-coaching-prompt", (_e, prompt) => {
   const box = document.getElementById("prompt-box");
   if (box) {
@@ -101,7 +149,7 @@ ipcRenderer.on("show-coaching-prompt", (_e, prompt) => {
   }
 });
 
-// --- Manual prompt display ---
+// --- Manual Coaching Prompt ---
 async function showPrompt(type = "default") {
   const box = document.getElementById("prompt-box");
   try {
@@ -116,6 +164,6 @@ async function showPrompt(type = "default") {
   }
 }
 
-// --- Expose session controls globally for debugging/testing ---
+// --- Expose session control ---
 window.startSession = startSession;
 window.stopSession = stopSession;
