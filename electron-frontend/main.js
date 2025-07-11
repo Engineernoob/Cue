@@ -126,8 +126,14 @@ function connectToPythonBackend() {
 }
 
 // --- IPC Forwarding ---
-ipcMain.on("toggle-audio-capture", () => {
-  audioCapturing = !audioCapturing;
+ipcMain.on("toggle-audio-capture", (_event, enabled) => {
+  if (typeof enabled === "boolean") {
+    audioCapturing = enabled;
+  } else {
+    // fallback: toggle if no param
+    audioCapturing = !audioCapturing;
+  }
+
   mainWindow?.webContents.send("audio-status", { capturing: audioCapturing });
 
   if (ws?.readyState === WebSocket.OPEN) {

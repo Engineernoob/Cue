@@ -25,10 +25,11 @@ async function startAudioCapture() {
       if (event.data.size > 0) {
         const reader = new FileReader();
         reader.onload = () => {
-          const arrayBuffer = reader.result;
-          ipcRenderer.send("audio-chunk-data", arrayBuffer);
+          // Convert audio blob to base64 string and send to backend
+          const base64data = reader.result.split(",")[1]; // Strip off data URL prefix
+          ipcRenderer.send("audio-chunk-data", base64data);
         };
-        reader.readAsArrayBuffer(event.data);
+        reader.readAsDataURL(event.data); // Read as data URL for base64 encoding
       }
     };
 
@@ -84,7 +85,9 @@ function sendChatMessage() {
   chatBox.value = "";
 }
 
-document.getElementById("chat-send-btn")?.addEventListener("click", sendChatMessage);
+document
+  .getElementById("chat-send-btn")
+  ?.addEventListener("click", sendChatMessage);
 
 chatBox?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
@@ -105,8 +108,10 @@ document.addEventListener("keydown", (e) => {
 
 // --- Smart Text Parsing ---
 function processIncomingText(text) {
-  const actionRegex = /(TODO|Action Item|Follow up|Reminder|Next step):?\s*(.*)/gi;
-  const questionRegex = /\b(how|what|when|where|why|can|should|does)\b[^.?!]*[.?!]/gi;
+  const actionRegex =
+    /(TODO|Action Item|Follow up|Reminder|Next step):?\s*(.*)/gi;
+  const questionRegex =
+    /\b(how|what|when|where|why|can|should|does)\b[^.?!]*[.?!]/gi;
 
   const actionMatches = [...text.matchAll(actionRegex)];
   const questionMatches = [...text.matchAll(questionRegex)];
@@ -160,16 +165,21 @@ document.getElementById("live-insights-btn")?.addEventListener("click", () => {
   alert("Live Insights feature coming soon!");
 });
 
-document.getElementById("show-transcript-btn")?.addEventListener("click", () => {
-  if (chatWindow) {
-    chatWindow.hidden = !chatWindow.hidden;
-    if (!chatWindow.hidden) chatBox?.focus();
-  }
-});
+document
+  .getElementById("show-transcript-btn")
+  ?.addEventListener("click", () => {
+    if (chatWindow) {
+      chatWindow.hidden = !chatWindow.hidden;
+      if (!chatWindow.hidden) chatBox?.focus();
+    }
+  });
 
 // --- IPC Listeners ---
 ipcRenderer?.on("backend-status", (_e, status) => {
-  console.log("[Backend Status]", status.connected ? "Connected" : "Disconnected");
+  console.log(
+    "[Backend Status]",
+    status.connected ? "Connected" : "Disconnected"
+  );
 });
 
 ipcRenderer?.on("backend-message", (_e, message) => {
