@@ -1,0 +1,43 @@
+# Node dependencies
+node_modules/
+
+# Python virtual environment
+venv/
+.env/
+__pycache__/
+*.pyc
+
+# Electron build/output artifacts
+dist/
+build/
+out/
+*.asar
+
+# Logs and crash reports
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.pid
+*.seed
+*.pid.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor config
+.vscode/
+.idea/
+
+# Cache
+.cache/
+coverage/
+*.tgz
+
+# Custom: temporary websocket/session/debug files
+*.db
+*.sqlite
+*.log.txt
+screenshots/
+temp/

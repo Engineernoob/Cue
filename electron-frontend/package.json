@@ -1,0 +1,27 @@
+{
+    "name": "cue-ai-assistant",
+    "version": "1.0.0",
+    "description": "A simple AI-powered desktop assistant similar to Glass.",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "package": "@electron/packager. --overwrite --asar --platform=all --arch=x64 --out=dist/"
+    },
+    "keywords": [
+        "Electron",
+        "AI",
+        "Assistant",
+        "Speech-to-Text",
+        "OCR",
+        "Ollama"
+    ],
+    "author": "Taahirah Denmark",
+    "license": "MIT",
+    "devDependencies": {
+        "electron": "^30.0.0",
+        "electron-packager": "^17.1.2"
+    },
+    "dependencies": {
+        "ws": "^8.18.3"
+    }
+}
