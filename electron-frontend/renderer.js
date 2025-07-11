@@ -7,7 +7,7 @@ document.getElementById("listen-btn")?.addEventListener("click", () => {
 });
 
 document.getElementById("ask-btn")?.addEventListener("click", () => {
-  ipcRenderer?.send("trigger-llm-input");
+  showPrompt("interview");
 });
 
 document.getElementById("toggle-btn")?.addEventListener("click", () => {
@@ -18,6 +18,29 @@ document.getElementById("menu-btn")?.addEventListener("click", () => {
   alert("More options coming soon.");
 });
 
+// --- Session Controls ---
+// Example functions to start/stop sessions (call these from your UI as needed)
+async function startSession(sessionType = "default") {
+  try {
+    const result = await ipcRenderer.invoke("start-session", {
+      platform: "generic",
+      problemTitle: sessionType,
+    });
+    console.log("Session started:", result);
+  } catch (err) {
+    console.error("Failed to start session:", err);
+  }
+}
+
+async function stopSession() {
+  try {
+    const result = await ipcRenderer.invoke("stop-session");
+    console.log("Session stopped:", result);
+  } catch (err) {
+    console.error("Failed to stop session:", err);
+  }
+}
+
 // --- Smart Text Parsing ---
 function processIncomingText(text) {
   const actionRegex = /(TODO|Action Item|Follow up|Reminder|Next step):?\s*(.*)/gi;
@@ -26,11 +49,11 @@ function processIncomingText(text) {
   const actionMatches = [...text.matchAll(actionRegex)];
   const questionMatches = [...text.matchAll(questionRegex)];
 
-  actionMatches.forEach(match => {
+  actionMatches.forEach((match) => {
     console.log("🔧 Action Item:", match[2]);
   });
 
-  questionMatches.forEach(match => {
+  questionMatches.forEach((match) => {
     const question = match[0].trim();
     console.log("🧠 Auto-Query:", question);
     ipcRenderer?.send("send-llm-query", question);
@@ -67,3 +90,32 @@ ipcRenderer?.on("backend-message", (_e, message) => {
 ipcRenderer?.on("llm-response-error", (_e, error) => {
   console.error("[LLM Error]", error.message);
 });
+
+// Show coaching prompts pushed from main/backend
+ipcRenderer.on("show-coaching-prompt", (_e, prompt) => {
+  const box = document.getElementById("prompt-box");
+  if (box) {
+    box.innerText = prompt;
+    box.hidden = false;
+    setTimeout(() => (box.hidden = true), 6000);
+  }
+});
+
+// --- Manual prompt display ---
+async function showPrompt(type = "default") {
+  const box = document.getElementById("prompt-box");
+  try {
+    const prompt = await ipcRenderer.invoke("coaching:get-prompt", type);
+    if (box) {
+      box.innerText = prompt;
+      box.hidden = false;
+      setTimeout(() => (box.hidden = true), 6000);
+    }
+  } catch (error) {
+    console.error("Failed to get coaching prompt:", error);
+  }
+}
+
+// --- Expose session controls globally for debugging/testing ---
+window.startSession = startSession;
+window.stopSession = stopSession;
