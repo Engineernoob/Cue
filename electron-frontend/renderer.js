@@ -1,93 +1,59 @@
-// renderer.js (for Cue floating overlay)
 const { ipcRenderer } = window.electron || {};
 
-// --- Button Handlers (from HTML) ---
-document.getElementById("listen-btn")?.addEventListener("click", () => {
-  ipcRenderer?.send("toggle-audio-capture");
-});
-
-document.getElementById("ask-btn")?.addEventListener("click", () => {
-  showPrompt("interview");
-});
-
-document.getElementById("toggle-btn")?.addEventListener("click", () => {
-  ipcRenderer?.send("request-hide-window");
-});
-
-document.getElementById("menu-btn")?.addEventListener("click", () => {
-  alert("More options coming soon.");
-});
-
-// --- Session Controls ---
-async function startSession(sessionType = "default") {
-  try {
-    const result = await ipcRenderer.invoke("start-session", {
-      platform: "generic",
-      problemTitle: sessionType,
-    });
-    console.log("Session started:", result);
-  } catch (err) {
-    console.error("Failed to start session:", err);
-  }
-}
-
-async function stopSession() {
-  try {
-    const result = await ipcRenderer.invoke("stop-session");
-    console.log("Session stopped:", result);
-  } catch (err) {
-    console.error("Failed to stop session:", err);
-  }
-}
-
-// --- Smart Text Parsing ---
-function processIncomingText(text) {
-  const actionRegex = /(TODO|Action Item|Follow up|Reminder|Next step):?\s*(.*)/gi;
-  const questionRegex = /\b(how|what|when|where|why|can|should|does)\b[^.?!]*[.?!]/gi;
-
-  const actionMatches = [...text.matchAll(actionRegex)];
-  const questionMatches = [...text.matchAll(questionRegex)];
-
-  actionMatches.forEach((match) => {
-    console.log("🔧 Action Item:", match[2]);
-  });
-
-  questionMatches.forEach((match) => {
-    const question = match[0].trim();
-    console.log("🧠 Auto-Query:", question);
-    ipcRenderer?.send("send-llm-query", question);
-    appendMessage(question, "user");
-  });
-}
-
-// --- Chat UI ---
+// --- Element Refs ---
 const chatWindow = document.getElementById("chat-window");
 const chatBox = document.getElementById("chat-input-box");
 const sendBtn = document.getElementById("chat-send-btn");
 const chatMessages = document.getElementById("chat-messages");
 
-function appendMessage(text, role = "user") {
-  if (!chatMessages) return;
+const inputBar = document.getElementById("chat-input");
+const thinkingBar = document.getElementById("thinking-bar");
+const thinkingText = document.getElementById("thinking-text");
+const closeThinkingBtn = document.querySelector(".close-icon");
+const insightsText = document.getElementById("insights-content");
 
-  const msg = document.createElement("div");
-  msg.className = `chat-message ${role}`;
-  msg.textContent = text;
-  msg.style.textAlign = role === "user" ? "right" : "left";
-  msg.style.opacity = role === "system" ? 0.7 : 1;
-  msg.style.marginBottom = "8px";
-  chatMessages.appendChild(msg);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+let sessionActive = false;
+
+// --- Button Handlers ---
+document.getElementById("listen-btn")?.addEventListener("click", async () => {
+  if (!sessionActive) {
+    try {
+      await startSession("default");
+      sessionActive = true;
+      updateListenButton();
+      ipcRenderer?.send("toggle-audio-capture", true); // start audio capture
+    } catch (e) {
+      console.error("Error starting session:", e);
+    }
+  } else {
+    try {
+      await stopSession();
+      sessionActive = false;
+      updateListenButton();
+      ipcRenderer?.send("toggle-audio-capture", false); // stop audio capture
+    } catch (e) {
+      console.error("Error stopping session:", e);
+    }
+  }
+});
+
+function updateListenButton() {
+  const btn = document.getElementById("listen-btn");
+  if (!btn) return;
+  btn.textContent = sessionActive ? "Pause ⏸" : "Listen ▶️";
 }
 
+// ** Updated: Use this for the Ask button and Enter key **
 function sendChatMessage() {
   const text = chatBox.value.trim();
   if (!text) return;
   appendMessage(text, "user");
+  showThinking(text);
   ipcRenderer?.send("send-llm-query", text);
   chatBox.value = "";
 }
 
-sendBtn?.addEventListener("click", sendChatMessage);
+document.getElementById("chat-send-btn")?.addEventListener("click", sendChatMessage);
 
 chatBox?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
@@ -103,6 +69,70 @@ document.addEventListener("keydown", (e) => {
       chatWindow.hidden = !chatWindow.hidden;
       if (!chatWindow.hidden) chatBox?.focus();
     }
+  }
+});
+
+// --- Smart Text Parsing ---
+function processIncomingText(text) {
+  const actionRegex = /(TODO|Action Item|Follow up|Reminder|Next step):?\s*(.*)/gi;
+  const questionRegex = /\b(how|what|when|where|why|can|should|does)\b[^.?!]*[.?!]/gi;
+
+  const actionMatches = [...text.matchAll(actionRegex)];
+  const questionMatches = [...text.matchAll(questionRegex)];
+
+  actionMatches.forEach((match) => {
+    console.log("🔧 Action Item:", match[2]);
+  });
+
+  questionMatches.forEach((match) => {
+    const question = match[0].trim();
+    showThinking(question);
+    console.log("🧠 Auto-Query:", question);
+    ipcRenderer?.send("send-llm-query", question);
+    appendMessage(question, "user");
+  });
+}
+
+// --- Chat UI ---
+function appendMessage(text, role = "user") {
+  if (!chatMessages) return;
+
+  const msg = document.createElement("div");
+  msg.className = `chat-message ${role}`;
+  msg.textContent = text;
+  msg.style.textAlign = role === "user" ? "right" : "left";
+  msg.style.opacity = role === "system" ? 0.7 : 1;
+  msg.style.marginBottom = "8px";
+  chatMessages.appendChild(msg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// --- Thinking Bar ---
+function showThinking(text = "") {
+  if (!thinkingBar) return;
+  thinkingText.textContent = `“${text}”`;
+  thinkingBar.hidden = false;
+  thinkingBar.classList.add("show");
+}
+
+function hideThinking() {
+  thinkingBar?.classList.remove("show");
+  setTimeout(() => {
+    if (thinkingBar) thinkingBar.hidden = true;
+  }, 600);
+}
+
+closeThinkingBtn?.addEventListener("click", hideThinking);
+
+// --- Insights Controls ---
+document.getElementById("live-insights-btn")?.addEventListener("click", () => {
+  alert("Live Insights feature coming soon!");
+});
+
+document.getElementById("show-transcript-btn")?.addEventListener("click", () => {
+  if (chatWindow) {
+    chatWindow.hidden = !chatWindow.hidden;
+    if (!chatWindow.hidden) chatBox?.focus();
   }
 });
 
@@ -124,11 +154,16 @@ ipcRenderer?.on("backend-message", (_e, message) => {
       break;
     case "llm_response_complete":
       appendMessage(message.text || "", "assistant");
+      hideThinking();
+      break;
+    case "live_summary":
+      if (insightsText) insightsText.textContent = message.text;
       break;
     case "transcript_error":
     case "ocr_error":
     case "llm_response_error":
       console.error("[Error]", message.message);
+      hideThinking();
       break;
     default:
       console.warn("[Unhandled]", message.type);
@@ -137,9 +172,9 @@ ipcRenderer?.on("backend-message", (_e, message) => {
 
 ipcRenderer?.on("llm-response-error", (_e, error) => {
   console.error("[LLM Error]", error.message);
+  hideThinking();
 });
 
-// Show coaching prompts
 ipcRenderer.on("show-coaching-prompt", (_e, prompt) => {
   const box = document.getElementById("prompt-box");
   if (box) {
@@ -164,6 +199,31 @@ async function showPrompt(type = "default") {
   }
 }
 
-// --- Expose session control ---
+// --- Session Controls ---
+async function startSession(sessionType = "default") {
+  try {
+    const result = await ipcRenderer.invoke("start-session", {
+      platform: "generic",
+      problemTitle: sessionType,
+    });
+    console.log("Session started:", result);
+  } catch (err) {
+    console.error("Failed to start session:", err);
+    throw err;
+  }
+}
+
+async function stopSession() {
+  try {
+    const result = await ipcRenderer.invoke("stop-session");
+    console.log("Session stopped:", result);
+  } catch (err) {
+    console.error("Failed to stop session:", err);
+    throw err;
+  }
+}
+
+// --- Expose session control & sendChatMessage ---
 window.startSession = startSession;
 window.stopSession = stopSession;
+window.sendChatMessage = sendChatMessage;

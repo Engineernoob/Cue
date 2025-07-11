@@ -7,14 +7,18 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <!-- 🔹 Glass Floating Bar -->
     <div class="glass-bar">
       <button class="glass-btn" id="listen-btn">Listen ⏸</button>
       <button class="glass-btn" id="ask-btn">Ask ⌘↩</button>
       <button class="glass-btn" id="toggle-btn">Show/Hide ⌘\\</button>
       <button class="glass-btn" id="menu-btn">⋯</button>
     </div>
+
+    <!-- 🔹 Coaching Prompt Box -->
     <div id="prompt-box" class="coaching-box" hidden></div>
 
+    <!-- 🔹 Chat UI -->
     <div id="chat-window" class="chat-ui" hidden>
       <div class="chat-header">Cue Chat</div>
       <div class="chat-messages" id="chat-messages"></div>
@@ -28,27 +32,58 @@
         <button id="chat-send-btn">Send</button>
       </div>
     </div>
+
+    <!-- 🔹 Input Prompt Bar -->
+    <div id="input-bar" class="static-bar">
+      Ask about your screen or audio...
+    </div>
+
+    <!-- 🔹 Thinking Bar -->
+    <div class="thinking-bar" id="thinking-bar" hidden>
+      <span class="icon">ⓘ</span>
+      <span class="thinking-text" id="thinking-text">Thinking…</span>
+      <span
+        class="close"
+        onclick="document.getElementById('thinking-bar').hidden = true;"
+      >
+        ×
+      </span>
+    </div>
+
+    <!-- 🔹 Insights Bar -->
+    <div class="insight-bar">
+      <div class="insight-header">
+        <strong>Current Summary:</strong>
+        <span id="summary-text">No content yet...</span>
+      </div>
+      <div class="insight-controls">
+        <button id="live-insights-btn">Live Insights</button>
+        <button id="show-transcript-btn">Show Transcript</button>
+      </div>
+    </div>
+
+    <!-- 🔹 Button Handlers -->
     <script>
-      // Optional: connect buttons to your Electron backend if needed
       const { ipcRenderer } = window.electron || {};
 
       document.getElementById("listen-btn")?.addEventListener("click", () => {
-        ipcRenderer?.send?.("toggle-audio-capture");
+        ipcRenderer?.send("toggle-audio-capture");
       });
 
       document.getElementById("toggle-btn")?.addEventListener("click", () => {
-        ipcRenderer?.send?.("request-hide-window");
+        ipcRenderer?.send("request-hide-window");
       });
 
+      // Call the sendChatMessage function defined in renderer.js
       document.getElementById("ask-btn")?.addEventListener("click", () => {
-        ipcRenderer?.send?.("trigger-llm-input");
+        if (typeof sendChatMessage === "function") sendChatMessage();
       });
 
       document.getElementById("menu-btn")?.addEventListener("click", () => {
-        // Future: open settings or menu
         alert("Coming soon...");
       });
     </script>
+
     <script src="renderer.js"></script>
   </body>
 </html>
