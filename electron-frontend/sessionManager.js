@@ -3,6 +3,7 @@ const { ipcMain } = require('electron');
 
 const sessionStore = new Store();
 let currentSession = null;
+let ipcRegistered = false;
 
 function startSession(type = 'interview') {
   const session = {
@@ -23,13 +24,22 @@ function stopSession() {
   }
 }
 
-ipcMain.handle('session:start', (_e, type) => {
-  return startSession(type);
-});
+function registerSessionHandlers() {
+  if (ipcRegistered) return; // Prevent double registration
+  ipcRegistered = true;
 
-ipcMain.handle('session:stop', () => {
-  stopSession();
-  return true;
-});
+  ipcMain.handle('session:start', (_e, type) => {
+    return startSession(type);
+  });
 
-module.exports = { startSession, stopSession };
+  ipcMain.handle('session:stop', () => {
+    stopSession();
+    return true;
+  });
+}
+
+module.exports = {
+  startSession,
+  stopSession,
+  registerSessionHandlers
+};

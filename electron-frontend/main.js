@@ -9,7 +9,7 @@ const {
   const path = require("path");
   const WebSocket = require("ws");
   
-  const { startSession, stopSession } = require("./sessionManager");
+  const { registerSessionHandlers } = require("./sessionManager");
   const { getPrompt } = require("./coachingEngine");
   
   const PYTHON_BACKEND_WS_URL = "ws://127.0.0.1:8000/ws";
@@ -19,8 +19,7 @@ const {
   
   // --- Create Minimal Floating Bar UI ---
   function createWindow() {
-    const { width: screenWidth, height: screenHeight } =
-      screen.getPrimaryDisplay().workAreaSize;
+    const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
     const windowWidth = 360;
     const windowHeight = 50;
   
@@ -66,6 +65,7 @@ const {
     createWindow();
     connectToPythonBackend();
     registerGlobalShortcuts();
+    registerSessionHandlers();
   
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -97,7 +97,6 @@ const {
       const msg = JSON.parse(event.data);
       mainWindow?.webContents.send("backend-message", msg);
   
-      // Example: forward coaching prompts from backend to renderer
       if (msg.type === "coaching_prompt") {
         mainWindow?.webContents.send("show-coaching-prompt", msg.payload);
       }
@@ -133,7 +132,7 @@ const {
         mainWindow.webContents.send("window-visibility", { visible: false });
       } else {
         mainWindow?.show();
-        mainWindow?.webContents.send("window-visibility", { visible: true });
+        mainWindow.webContents.send("window-visibility", { visible: true });
       }
     });
   
@@ -190,20 +189,6 @@ const {
       mainWindow.hide();
       mainWindow.webContents.send("window-visibility", { visible: false });
     }
-  });
-  
-  // --- New IPC Handlers for Session and Coaching ---
-  
-  ipcMain.handle("session:start", (_event, type) => {
-    const session = startSession(type);
-    console.log("Session started:", session);
-    return session;
-  });
-  
-  ipcMain.handle("session:stop", () => {
-    stopSession();
-    console.log("Session stopped");
-    return true;
   });
   
   ipcMain.handle("coaching:get-prompt", (_event, type) => {
