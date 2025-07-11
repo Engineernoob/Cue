@@ -15,8 +15,8 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 50px;
-  padding: 0 20px;
+  height: 80px;
+  padding: 10px 20px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px) saturate(160%);
@@ -34,8 +34,8 @@ body {
 .glass-btn {
   background: transparent;
   color: white;
-  font-size: 14px;
-  padding: 6px 14px;
+  font-size: 16px;
+  padding: 10px 20px;
   border: none;
   border-radius: 20px;
   cursor: pointer;
