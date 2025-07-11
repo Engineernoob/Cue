@@ -13,26 +13,57 @@ const closeThinkingBtn = document.querySelector(".close-icon");
 const insightsText = document.getElementById("insights-content");
 
 let sessionActive = false;
+let mediaRecorder = null;
 
-// --- Button Handlers ---
+// --- Audio Capture Functions ---
+async function startAudioCapture() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const arrayBuffer = reader.result;
+          ipcRenderer.send("audio-chunk-data", arrayBuffer);
+        };
+        reader.readAsArrayBuffer(event.data);
+      }
+    };
+
+    mediaRecorder.start(250); // emit audio chunks every 250ms
+  } catch (err) {
+    console.error("Error accessing microphone:", err);
+  }
+}
+
+function stopAudioCapture() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+    mediaRecorder = null;
+  }
+}
+
+// --- Listen Button Handler ---
 document.getElementById("listen-btn")?.addEventListener("click", async () => {
   if (!sessionActive) {
     try {
       await startSession("default");
       sessionActive = true;
       updateListenButton();
-      ipcRenderer?.send("toggle-audio-capture", true); // start audio capture
+      await startAudioCapture(); // start capturing mic audio
     } catch (e) {
-      console.error("Error starting session:", e);
+      console.error("Error starting session or audio capture:", e);
     }
   } else {
     try {
       await stopSession();
       sessionActive = false;
       updateListenButton();
-      ipcRenderer?.send("toggle-audio-capture", false); // stop audio capture
+      stopAudioCapture(); // stop mic audio capture
     } catch (e) {
-      console.error("Error stopping session:", e);
+      console.error("Error stopping session or audio capture:", e);
     }
   }
 });
@@ -43,7 +74,7 @@ function updateListenButton() {
   btn.textContent = sessionActive ? "Pause ⏸" : "Listen ▶️";
 }
 
-// ** Updated: Use this for the Ask button and Enter key **
+// --- Send Chat Message (Ask button or Enter key) ---
 function sendChatMessage() {
   const text = chatBox.value.trim();
   if (!text) return;

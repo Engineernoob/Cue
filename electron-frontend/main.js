@@ -4,7 +4,6 @@ const {
   ipcMain,
   desktopCapturer,
   screen,
-  globalShortcut,
 } = require("electron");
 const path = require("path");
 const WebSocket = require("ws");
@@ -65,9 +64,9 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
   connectToPythonBackend();
-  registerGlobalShortcuts();
+  // Removed registerGlobalShortcuts();
   registerSessionHandlers();
-  registerCoachingHandlers(); // ✅ NEW
+  registerCoachingHandlers();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -80,7 +79,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("will-quit", () => {
-  globalShortcut.unregisterAll();
+  // No global shortcuts to unregister now
   if (process.platform === "darwin" && app.dock.isVisible()) {
     app.dock.show();
   }
@@ -126,40 +125,15 @@ function connectToPythonBackend() {
   };
 }
 
-// --- Global Shortcuts ---
-function registerGlobalShortcuts() {
-  globalShortcut.register("CommandOrControl+Shift+G", () => {
-    if (mainWindow?.isVisible()) {
-      mainWindow.hide();
-      mainWindow.webContents.send("window-visibility", { visible: false });
-    } else {
-      mainWindow?.show();
-      mainWindow.webContents.send("window-visibility", { visible: true });
-    }
-  });
-
-  globalShortcut.register("CommandOrControl+Shift+A", () => {
-    mainWindow?.webContents.send("toggle-audio-capture");
-  });
-
-  globalShortcut.register("CommandOrControl+Shift+S", () => {
-    mainWindow?.webContents.send("toggle-screen-capture");
-  });
-
-  globalShortcut.register("CommandOrControl+Shift+L", () => {
-    mainWindow?.webContents.send("trigger-llm-input");
-  });
-
-  console.log("✅ Global shortcuts registered");
-}
-
 // --- IPC Forwarding ---
 ipcMain.on("toggle-audio-capture", () => {
   audioCapturing = !audioCapturing;
   mainWindow?.webContents.send("audio-status", { capturing: audioCapturing });
 
   if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: "audio_capture_toggle", enabled: audioCapturing }));
+    ws.send(
+      JSON.stringify({ type: "audio_capture_toggle", enabled: audioCapturing })
+    );
   }
 });
 
