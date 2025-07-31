@@ -3,70 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cue</title>
+    <title>Cue AI Overlay</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <!-- 🔹 Glass Floating Bar -->
-    <div class="glass-bar" role="toolbar" aria-label="Cue Controls">
-      <button class="glass-btn" id="listen-btn" aria-label="Toggle Listening">
-        Listen ⏸
-      </button>
-      <button class="glass-btn" id="ask-btn" aria-label="Ask Cue">
-        Ask ⌘↩
-      </button>
-      <button class="glass-btn" id="toggle-btn" aria-label="Show or Hide Cue">
-        Show/Hide ⌘\\
-      </button>
-      <button
-        class="glass-btn"
-        id="menu-btn"
-        aria-label="Menu (Coming Soon)"
-        disabled
-      >
-        ⋯
-      </button>
+    <div class="glass-bar">
+      <button class="glass-btn" id="listen-btn">Listen ⏸</button>
+      <button class="glass-btn" id="ask-btn">Ask ⌘↩</button>
+      <button class="glass-btn" id="toggle-btn">Show/Hide ⌘\\</button>
+      <button class="glass-btn" id="menu-btn">⋯</button>
     </div>
 
     <!-- 🔹 Coaching Prompt Box -->
-    <div id="prompt-box" class="coaching-box" hidden aria-live="polite"></div>
+    <div id="prompt-box" class="coaching-box" hidden></div>
 
     <!-- 🔹 Chat UI -->
-    <div
-      id="chat-window"
-      class="chat-ui"
-      hidden
-      role="dialog"
-      aria-label="Cue Chat"
-    >
+    <div id="chat-window" class="chat-ui" hidden>
       <div class="chat-header">Cue Chat</div>
-      <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+      <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input">
         <input
           type="text"
           id="chat-input-box"
           placeholder="Ask Cue something..."
           autocomplete="off"
-          aria-label="Chat input"
         />
-        <button id="chat-send-btn" aria-label="Send Message">Send</button>
+        <button id="chat-send-btn">Send</button>
       </div>
     </div>
 
     <!-- 🔹 Input Prompt Bar -->
-    <div id="input-bar" class="input-bar" aria-live="polite">
+    <div id="input-bar" class="static-bar">
       Ask about your screen or audio...
     </div>
 
     <!-- 🔹 Thinking Bar -->
-    <div class="thinking-bar" id="thinking-bar" hidden aria-live="assertive">
-      <span class="info-icon" aria-hidden="true">ⓘ</span>
+    <div class="thinking-bar" id="thinking-bar" hidden>
+      <span class="icon">ⓘ</span>
       <span class="thinking-text" id="thinking-text">Thinking…</span>
       <span
-        class="close-icon"
-        role="button"
-        tabindex="0"
-        aria-label="Close thinking bar"
+        class="close"
         onclick="document.getElementById('thinking-bar').hidden = true;"
       >
         ×
@@ -74,8 +51,8 @@
     </div>
 
     <!-- 🔹 Insights Bar -->
-    <div class="insights-bar" role="complementary" aria-label="Live Insights">
-      <div id="insights-content">
+    <div class="insight-bar">
+      <div class="insight-header">
         <strong>Current Summary:</strong>
         <span id="summary-text">No content yet...</span>
       </div>
@@ -97,8 +74,13 @@
         ipcRenderer?.send("request-hide-window");
       });
 
+      // Call the sendChatMessage function defined in renderer.js
       document.getElementById("ask-btn")?.addEventListener("click", () => {
         if (typeof sendChatMessage === "function") sendChatMessage();
+      });
+
+      document.getElementById("menu-btn")?.addEventListener("click", () => {
+        alert("Coming soon...");
       });
     </script>
 
