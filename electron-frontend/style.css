@@ -8,6 +8,7 @@ body {
   width: 100%;
   overflow: hidden;
   user-select: none;
+  color: white;
 }
 
 /* ───── Glass Floating Bar ───── */
@@ -15,17 +16,17 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 80px;
-  padding: 10px 20px;
+  height: 72px;
+  padding: 12px 28px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   -webkit-app-region: drag;
   position: absolute;
-  top: 10px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -34,77 +35,80 @@ body {
 .glass-btn {
   background: transparent;
   color: white;
-  font-size: 16px;
-  padding: 10px 20px;
+  font-size: 15px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 20px;
+  border-radius: 14px;
   cursor: pointer;
   transition: background 0.2s ease;
   -webkit-app-region: no-drag;
 }
 
 .glass-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* ───── Coaching Box ───── */
 .coaching-box {
   position: absolute;
-  top: 70px;
+  top: 90px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 10px 16px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border-radius: 12px;
+  padding: 10px 18px;
+  background: rgba(18, 18, 18, 0.8);
+  color: #f8f8f8;
+  border-radius: 14px;
   font-size: 14px;
   max-width: 90%;
   z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   transition: opacity 0.3s ease;
 }
 
 /* ───── Chat UI ───── */
 .chat-ui {
   position: fixed;
-  bottom: 90px;
+  bottom: 100px;
   right: 20px;
-  width: 300px;
-  max-height: 400px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(10px);
+  width: 320px;
+  max-height: 420px;
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(12px);
   color: white;
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);
   z-index: 999;
   -webkit-app-region: no-drag;
 }
 
 .chat-header {
-  padding: 10px 16px;
-  font-weight: bold;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
 }
 
 .chat-messages {
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   overflow-y: auto;
   font-size: 13px;
+  line-height: 1.5;
 }
 
 .chat-input {
   display: flex;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
 }
 
 .chat-input input {
   flex: 1;
-  padding: 8px;
+  padding: 10px;
   border: none;
   background: transparent;
   color: white;
@@ -113,39 +117,41 @@ body {
 }
 
 .chat-input button {
-  padding: 8px 12px;
+  padding: 10px 16px;
   border: none;
-  background: #4f46e5;
+  background: #6366f1;
   color: white;
   cursor: pointer;
-  border-radius: 0 0 12px 0;
+  border-radius: 0 0 16px 0;
+  font-weight: 500;
 }
 
 /* ───── Input Prompt Bar ───── */
 .input-bar {
   position: absolute;
-  top: 65px;
+  top: 70px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.1);
   color: white;
   padding: 8px 20px;
-  border-radius: 16px;
+  border-radius: 20px;
   font-size: 13px;
   white-space: nowrap;
   z-index: 800;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* ───── Thinking Bar ───── */
 .thinking-bar {
   position: absolute;
-  top: 95px;
+  top: 100px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(25, 25, 25, 0.85);
   color: white;
-  padding: 8px 16px;
-  border-radius: 12px;
+  padding: 10px 18px;
+  border-radius: 16px;
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -154,6 +160,7 @@ body {
   z-index: 900;
   opacity: 0;
   animation-fill-mode: forwards;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .thinking-bar.show {
@@ -163,7 +170,7 @@ body {
 
 .info-icon {
   font-size: 14px;
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .close-icon {
@@ -171,42 +178,27 @@ body {
   cursor: pointer;
   font-size: 16px;
   user-select: none;
-}
-
-/* Optional fade animation */
-@keyframes fadeInOut {
-  0% {
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  opacity: 0.8;
 }
 
 /* ───── Insights Bar ───── */
 .insights-bar {
   position: absolute;
-  bottom: 10px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 10px 20px;
+  border-radius: 14px;
+  padding: 12px 24px;
   color: white;
   font-size: 13px;
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   z-index: 950;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   user-select: none;
 }
 
@@ -223,8 +215,8 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: white;
-  padding: 5px 12px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 10px;
   font-size: 12px;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -232,4 +224,12 @@ body {
 
 .insight-controls button:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* ───── Animations ───── */
+@keyframes fadeInOut {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; }
 }
