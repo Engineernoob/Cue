@@ -20,8 +20,8 @@ let audioCapturing = false;
 // --- Create Minimal Floating Bar UI ---
 function createWindow() {
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
-  const windowWidth = 400;
-  const windowHeight = 80;
+  const windowWidth = 500;
+  const windowHeight = 90;
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
