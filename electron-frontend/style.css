@@ -226,6 +226,61 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* ───── Response Box ───── */
+#response-box {
+  position: absolute;
+  top: 160px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 40, 40, 0.92);
+  border-radius: 18px;
+  color: white;
+  padding: 18px 24px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);
+  z-index: 950;
+  backdrop-filter: blur(18px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.25s ease;
+}
+
+#response-status {
+  font-weight: 600;
+  font-size: 14px;
+  color: #a3a3a3;
+}
+
+#response-content {
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.response-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.response-controls button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: background 0.2s ease;
+}
+
+.response-controls button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* ───── Animations ───── */
 @keyframes fadeInOut {
   0%   { opacity: 0; }
