@@ -15,54 +15,7 @@
       <button class="glass-btn" id="menu-btn">⋯</button>
     </div>
 
-    <!-- 🔹 Coaching Prompt Box -->
-    <div id="prompt-box" class="coaching-box" hidden></div>
-
-    <!-- 🔹 Chat UI -->
-    <div id="chat-window" class="chat-ui" hidden>
-      <div class="chat-header">Cue Chat</div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <div class="chat-input">
-        <input
-          type="text"
-          id="chat-input-box"
-          placeholder="Ask Cue something..."
-          autocomplete="off"
-        />
-        <button id="chat-send-btn">Send</button>
-      </div>
-    </div>
-
-    <!-- 🔹 Input Prompt Bar -->
-    <div id="input-bar" class="static-bar">
-      Ask about your screen or audio...
-    </div>
-
-    <!-- 🔹 Thinking Bar -->
-    <div class="thinking-bar" id="thinking-bar" hidden>
-      <span class="icon">ⓘ</span>
-      <span class="thinking-text" id="thinking-text">Thinking…</span>
-      <span
-        class="close"
-        onclick="document.getElementById('thinking-bar').hidden = true;"
-      >
-        ×
-      </span>
-    </div>
-
-    <!-- 🔹 Insights Bar -->
-    <div class="insight-bar">
-      <div class="insight-header">
-        <strong>Current Summary:</strong>
-        <span id="summary-text">No content yet...</span>
-      </div>
-      <div class="insight-controls">
-        <button id="live-insights-btn">Live Insights</button>
-        <button id="show-transcript-btn">Show Transcript</button>
-      </div>
-    </div>
-
-    <!-- 🔹 Button Handlers -->
+        <!-- 🔹 Button Handlers -->
     <script>
       const { ipcRenderer } = window.electron || {};
 
