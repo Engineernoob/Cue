@@ -179,3 +179,23 @@ closeBtn?.addEventListener("click", () => {
 copyBtn?.addEventListener("click", () => {
   navigator.clipboard.writeText(responseText.textContent.trim());
 });
+
+// --- IPC Renderer Integration ---
+const { ipcRenderer } = window.electron || {};
+
+ipcRenderer?.on("show-input", () => {
+  inputBar.hidden = false;
+  inputBox.focus();
+});
+
+ipcRenderer?.on("hide-response", () => {
+  responseBox.hidden = true;
+});
+
+document.getElementById("menu-btn")?.addEventListener("click", () => {
+  ipcRenderer?.send("open-menu");
+});
+
+document.getElementById("toggle-btn")?.addEventListener("click", () => {
+  ipcRenderer?.send("toggle-overlay");
+});
