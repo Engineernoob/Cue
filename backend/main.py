@@ -164,13 +164,17 @@ async def handle_audio_chunk(websocket: WebSocket, message: Dict[str, Any]):
             return
 
         audio_bytes = base64.b64decode(audio_bytes_b64)
+
+        # 🚨 Buffer safety check before converting to float32
+        if len(audio_bytes) % 4 != 0:
+            logging.warning(f"Skipping malformed audio chunk (size={len(audio_bytes)} not divisible by 4)")
+            return
+
         audio_np = np.frombuffer(audio_bytes, dtype=np.float32)
 
         segments, info = whisper_model.transcribe(audio_np, beam_size=5)
 
-        full_transcript = ""
-        for segment in segments:
-            full_transcript += segment.text
+        full_transcript = "".join(segment.text for segment in segments)
 
         if full_transcript.strip():
             add_to_context("audio", full_transcript)
@@ -187,6 +191,7 @@ async def handle_audio_chunk(websocket: WebSocket, message: Dict[str, Any]):
         logging.error(f"Error processing audio chunk: {e}", exc_info=True)
         await websocket.send_json({"type": "transcript_error", "message": str(e)})
 
+
 async def handle_image_data(websocket: WebSocket, message: Dict[str, Any]):
     try:
         image_bytes_b64 = message.get("data")
@@ -195,7 +200,17 @@ async def handle_image_data(websocket: WebSocket, message: Dict[str, Any]):
             return
 
         image_bytes = base64.b64decode(image_bytes_b64)
-        image = Image.open(io.BytesIO(image_bytes))
+
+        # 🛡️ Safe load + format conversion to prevent format-related issues
+        try:
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        except Exception as img_error:
+            logging.warning(f"Invalid image format or unreadable image: {img_error}")
+            await websocket.send_json({
+                "type": "ocr_error",
+                "message": "Unreadable or unsupported image format."
+            })
+            return
 
         extracted_text = pytesseract.image_to_string(image)
 
@@ -211,6 +226,7 @@ async def handle_image_data(websocket: WebSocket, message: Dict[str, Any]):
     except Exception as e:
         logging.error(f"Error processing image data for OCR: {e}", exc_info=True)
         await websocket.send_json({"type": "ocr_error", "message": str(e)})
+
 
 async def handle_llm_query(websocket: WebSocket, message: Dict[str, Any]):
     user_query = message.get("query", "")
