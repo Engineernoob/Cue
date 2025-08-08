@@ -102,7 +102,7 @@ function sendChatMessage() {
 
   inputBox.value = "";
   showThinking(text);
-  showResponse("Waiting for response...", "Thinking…");
+  showResponse("Thinking…");
 
   socket.send(
     JSON.stringify({
