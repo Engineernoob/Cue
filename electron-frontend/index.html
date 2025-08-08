@@ -1,52 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Cue</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <!-- 🔹 Floating Glass Bar -->
-  <div class="glass-bar">
-    <button class="glass-btn" id="listen-btn">Listen ⏸</button>
-    <button class="glass-btn" id="ask-btn">Ask ⌘↩</button>
-    <button class="glass-btn" id="toggle-btn">Show/Hide ⌘\\</button>
-    <button class="glass-btn" id="menu-btn" disabled>⋯</button>
-  </div>
-
-  <!-- 🔹 Input Prompt Box -->
-  <div id="input-bar" class="input-bar" hidden>
-    <input
-      type="text"
-      id="chat-input-box"
-      placeholder="Ask about your screen or audio..."
-      autocomplete="off"
-    />
-    <button id="chat-send-btn">↩</button>
-  </div>
-
-  <!-- 🔹 Response Box -->
-  <div id="response-box" class="response-box" hidden>
-    <div class="response-header">
-      <span id="response-status">Analyzing screen...</span>
-      <button id="copy-btn">📋</button>
-      <button id="close-btn">×</button>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cue</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- 🔹 Floating Glass Bar -->
+    <div class="glass-bar">
+      <button class="glass-btn" id="listen-btn">Listen ⏸</button>
+      <button class="glass-btn" id="ask-btn">Ask ⌘↩</button>
+      <button class="glass-btn" id="toggle-btn">Show/Hide ⌘\\</button>
+      <button class="glass-btn" id="menu-btn" disabled>⋯</button>
     </div>
-    <div class="response-content" id="response-content">
-      Ask a question to see the response here.
+
+    <!-- 🔹 Input Prompt Bar -->
+    <div id="input-bar" class="input-bar" hidden>
+      <input
+        type="text"
+        id="chat-input-box"
+        placeholder="Ask about your screen or audio..."
+        autocomplete="off"
+      />
+      <button id="chat-send-btn">↩</button>
     </div>
-  </div>
 
-  <!-- 🧠 Assistant Response Box -->
-<div id="response-box">
-  <div id="response-status">Cue's Answer:</div>
-  <div id="response-content">...</div>
-  <div class="response-controls">
-    <button id="copy-btn">Copy</button>
-    <button id="close-btn">Close</button>
-  </div>
-</div>
+    <!-- 🔹 Thinking Bubble -->
+    <div class="thinking-bar" id="thinking-bar" hidden>
+      <span class="info-icon">ⓘ</span>
+      <span class="thinking-text" id="thinking-text">Thinking…</span>
+      <span class="close-icon" id="close-thinking">×</span>
+    </div>
 
-  <script src="renderer.js"></script>
-</body>
+    <!-- 🔹 Coaching Prompt -->
+    <div id="prompt-box" class="coaching-box" hidden></div>
+
+    <!-- 🧠 Assistant Response Box -->
+    <div id="response-box" class="response-box" hidden>
+      <div id="response-status">Cue's Answer:</div>
+      <div id="response-content">Ask a question to see the response here.</div>
+      <div class="response-controls">
+        <button id="copy-btn">📋 Copy</button>
+        <button id="close-btn">× Close</button>
+      </div>
+    </div>
+
+    <script src="renderer.js"></script>
+  </body>
 </html>
