@@ -1,4 +1,37 @@
-const { ipcRenderer } = window.electron || {};
+// --- WebSocket Setup ---
+const socket = new WebSocket("ws://localhost:8000/ws");
+
+socket.onopen = () => {
+  console.log("✅ Connected to backend");
+};
+
+socket.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log("📥 From backend:", message);
+
+  switch (message.type) {
+    case "llm_response_chunk":
+      responseText.textContent += message.text_chunk || "";
+      break;
+    case "llm_response_complete":
+      hideThinking();
+      break;
+    case "live_summary":
+      const el = document.getElementById("summary-text");
+      if (el) el.textContent = message.text;
+      break;
+    case "ocr_result":
+    case "transcript":
+      inputBox.value = message.text;
+      break;
+    case "error":
+      hideThinking();
+      showResponse("Sorry, something went wrong.", "Error");
+      break;
+    default:
+      console.warn("Unhandled message type:", message);
+  }
+};
 
 // --- Element Refs ---
 const inputBar = document.getElementById("input-bar");
@@ -17,29 +50,19 @@ const closeThinkingBtn = document.querySelector(".close-icon");
 
 const promptBox = document.getElementById("prompt-box");
 
+// --- Audio Session Handling ---
 let sessionActive = false;
 let mediaRecorder = null;
 
-// --- Audio Session Handling ---
 document.getElementById("listen-btn")?.addEventListener("click", async () => {
   if (!sessionActive) {
-    try {
-      await startSession();
-      sessionActive = true;
-      updateListenButton();
-      await startAudioCapture();
-    } catch (e) {
-      console.error("Failed to start session:", e);
-    }
+    sessionActive = true;
+    updateListenButton();
+    await startAudioCapture();
   } else {
-    try {
-      await stopSession();
-      sessionActive = false;
-      updateListenButton();
-      stopAudioCapture();
-    } catch (e) {
-      console.error("Failed to stop session:", e);
-    }
+    sessionActive = false;
+    updateListenButton();
+    stopAudioCapture();
   }
 });
 
@@ -56,7 +79,7 @@ document.getElementById("ask-btn")?.addEventListener("click", () => {
   if (!inputBar.hidden) inputBox.focus();
 });
 
-// --- Toggle (⌘/Ctrl + \) ---
+// --- Toggle Keyboard Shortcut (⌘ or Ctrl + \) ---
 document.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
     inputBar.hidden = !inputBar.hidden;
@@ -64,7 +87,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// --- Input Actions ---
+// --- Chat Input Handlers ---
 sendBtn?.addEventListener("click", sendChatMessage);
 inputBox?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
@@ -75,29 +98,42 @@ inputBox?.addEventListener("keydown", (e) => {
 
 function sendChatMessage() {
   const text = inputBox.value.trim();
-  if (!text) return;
+  if (!text || socket.readyState !== WebSocket.OPEN) return;
 
   inputBox.value = "";
   showThinking(text);
   showResponse("Waiting for response...", "Thinking…");
-  ipcRenderer?.send("send-llm-query", text);
+
+  socket.send(
+    JSON.stringify({
+      type: "llm_query",
+      query: text,
+    })
+  );
 }
 
-// --- Audio Capture ---
+// --- Audio Capture Logic ---
 async function startAudioCapture() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
+
     mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onloadend = () => {
           const base64data = reader.result.split(",")[1];
-          ipcRenderer.send("audio-chunk-data", base64data);
+          socket.send(
+            JSON.stringify({
+              type: "audio_chunk",
+              data: base64data,
+            })
+          );
         };
         reader.readAsDataURL(event.data);
       }
     };
+
     mediaRecorder.start(250);
   } catch (err) {
     console.error("Microphone error:", err);
@@ -111,76 +147,35 @@ function stopAudioCapture() {
   }
 }
 
-// --- Session IPC ---
-async function startSession() {
-  return ipcRenderer.invoke("start-session", {
-    platform: "generic",
-    problemTitle: "adhd-cue",
-  });
-}
-
-async function stopSession() {
-  return ipcRenderer.invoke("stop-session");
-}
-
 // --- Thinking Display ---
 function showThinking(text = "") {
-  thinkingText.textContent = `“${text}”`;
-  thinkingBar.hidden = false;
-  thinkingBar.classList.add("show");
+  if (thinkingText) thinkingText.textContent = `“${text}”`;
+  if (thinkingBar) {
+    thinkingBar.hidden = false;
+    thinkingBar.classList.add("show");
+  }
 }
 
 function hideThinking() {
-  thinkingBar.classList.remove("show");
-  setTimeout(() => (thinkingBar.hidden = true), 600);
+  if (thinkingBar) {
+    thinkingBar.classList.remove("show");
+    setTimeout(() => (thinkingBar.hidden = true), 600);
+  }
 }
 
 closeThinkingBtn?.addEventListener("click", hideThinking);
 
 // --- Response Display ---
 function showResponse(content, status = "Cue’s answer:") {
-  responseText.textContent = content;
-  responseStatus.textContent = status;
-  responseBox.hidden = false;
+  if (responseText) responseText.textContent = content;
+  if (responseStatus) responseStatus.textContent = status;
+  if (responseBox) responseBox.hidden = false;
 }
 
 closeBtn?.addEventListener("click", () => {
-  responseBox.hidden = true;
+  if (responseBox) responseBox.hidden = true;
 });
 
 copyBtn?.addEventListener("click", () => {
   navigator.clipboard.writeText(responseText.textContent.trim());
-});
-
-// --- Coaching Prompt Support ---
-ipcRenderer.on("show-coaching-prompt", (_e, prompt) => {
-  if (promptBox) {
-    promptBox.innerText = prompt;
-    promptBox.hidden = false;
-    setTimeout(() => (promptBox.hidden = true), 6000);
-  }
-});
-
-ipcRenderer.on("llm-response-error", (_e, err) => {
-  console.error("[LLM Error]", err.message);
-  hideThinking();
-  showResponse("Sorry, something went wrong.", "Error");
-});
-
-// --- Streaming Response Handling ---
-ipcRenderer.on("backend-message", (_e, msg) => {
-  switch (msg.type) {
-    case "llm_response_chunk":
-      responseText.textContent += msg.text_chunk || "";
-      break;
-    case "llm_response_complete":
-      hideThinking();
-      break;
-    case "live_summary":
-      const el = document.getElementById("summary-text");
-      if (el) el.textContent = msg.text;
-      break;
-    default:
-      console.log("Unhandled message:", msg);
-  }
 });
