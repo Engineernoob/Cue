@@ -134,7 +134,7 @@ async function startAudioCapture() {
       }
     };
 
-    mediaRecorder.start(250);
+    mediaRecorder.start(500); // Longer intervals for better performance
   } catch (err) {
     console.error("Microphone error:", err);
   }

@@ -10,8 +10,10 @@ const WebSocket = require("ws");
 
 const { registerSessionHandlers } = require("./sessionManager");
 const { registerCoachingHandlers } = require("./coachingEngine");
+const { registerNeurodivergentHandlers } = require("./neurodivergentSupport");
+const { getConfig } = require("./config");
 
-const PYTHON_BACKEND_WS_URL = "ws://127.0.0.1:8000/ws";
+const PYTHON_BACKEND_WS_URL = getConfig('backend.wsUrl');
 
 let mainWindow;
 let ws;
@@ -20,22 +22,24 @@ let audioCapturing = false;
 // --- Create Minimal Floating Bar UI ---
 function createWindow() {
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
+  const uiConfig = getConfig('ui');
   const windowWidth = 500;
   const windowHeight = 90;
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    x: Math.round((screenWidth - windowWidth) / 2),
-    y: 30,
+    x: uiConfig.position.x === 'center' ? Math.round((screenWidth - windowWidth) / 2) : uiConfig.position.x,
+    y: uiConfig.position.y,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    alwaysOnTop: uiConfig.alwaysOnTop,
     skipTaskbar: true,
     resizable: true,
     movable: true,
     hasShadow: false,
     show: true,
+    opacity: uiConfig.opacity,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
@@ -61,12 +65,15 @@ function createWindow() {
 }
 
 // --- Lifecycle ---
+let neurodivergentSupport;
+
 app.whenReady().then(() => {
   createWindow();
   connectToPythonBackend();
   // Removed registerGlobalShortcuts();
   registerSessionHandlers();
   registerCoachingHandlers();
+  neurodivergentSupport = registerNeurodivergentHandlers(mainWindow);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -112,7 +119,10 @@ function connectToPythonBackend() {
     console.warn("🔌 Disconnected from backend:", e.code, e.reason);
     mainWindow?.webContents.send("backend-status", { connected: false });
     mainWindow?.hide();
-    setTimeout(connectToPythonBackend, 5000);
+    
+    // Exponential backoff for reconnection
+    const backoffDelay = Math.min(getConfig('backend.reconnectDelay') * Math.pow(2, (e.attempts || 0)), 30000);
+    setTimeout(() => connectToPythonBackend(e.attempts ? e.attempts + 1 : 1), backoffDelay);
   };
 
   ws.onerror = (err) => {

@@ -58,6 +58,84 @@ def get_current_context() -> str:
         context_texts = [item[2] for item in context_buffer]
         return "\n".join(context_texts)
 
+def detect_context_type(context: str) -> str:
+    """Detect the type of context for better coaching support"""
+    context_lower = context.lower()
+    
+    # Coding interview indicators
+    coding_keywords = ['leetcode', 'algorithm', 'data structure', 'complexity', 'optimize', 
+                      'function', 'array', 'tree', 'graph', 'dynamic programming']
+    interview_keywords = ['interview', 'tell me about', 'experience', 'challenge', 'project']
+    debugging_keywords = ['error', 'bug', 'debug', 'not working', 'exception', 'stack trace']
+    
+    if any(keyword in context_lower for keyword in debugging_keywords):
+        return 'debugging'
+    elif any(keyword in context_lower for keyword in coding_keywords):
+        return 'coding'
+    elif any(keyword in context_lower for keyword in interview_keywords):
+        return 'interview'
+    else:
+        return 'general'
+
+def build_neurodivergent_prompt(context: str, query: str, context_type: str) -> str:
+    """Build a specialized prompt for neurodivergent coding support"""
+    
+    base_instructions = """You are Cue, an AI assistant designed specifically to support neurodivergent developers and students. 
+You help with coding interviews, assignments, and learning by providing:
+- Clear, structured guidance
+- Anxiety-reducing support
+- ADHD-friendly focus techniques
+- Step-by-step problem breakdowns
+- Confidence building
+
+Be supportive, patient, and focus on building understanding rather than just giving answers."""
+
+    context_instructions = {
+        'coding': """
+CODING CONTEXT DETECTED:
+- Break down complex problems into smaller steps
+- Suggest starting with brute force, then optimizing
+- Remind about edge cases and testing
+- Offer algorithm pattern recognition
+- Provide time/space complexity hints when relevant
+""",
+        'interview': """
+INTERVIEW CONTEXT DETECTED:
+- Use the STAR method for behavioral questions
+- Encourage thinking out loud for technical problems
+- Suggest asking clarifying questions
+- Remind that it's okay to take time to think
+- Build confidence and reduce anxiety
+""",
+        'debugging': """
+DEBUGGING CONTEXT DETECTED:
+- Suggest systematic debugging approaches
+- Recommend using print/console statements
+- Guide through error message interpretation
+- Help identify common error patterns
+- Encourage methodical problem-solving
+""",
+        'general': """
+GENERAL CONTEXT:
+- Provide clear, structured responses
+- Break down information into digestible chunks
+- Offer multiple approaches when applicable
+"""
+    }
+    
+    return f"""{base_instructions}
+
+{context_instructions.get(context_type, context_instructions['general'])}
+
+RECENT CONTEXT FROM USER'S ENVIRONMENT:
+---
+{context}
+---
+
+USER QUERY: "{query}"
+
+Provide a helpful, supportive response that considers the user's neurodivergent needs. Keep it concise but thorough."""
+
 def load_whisper_model():
     global whisper_model
     try:
@@ -163,7 +241,17 @@ async def handle_audio_chunk(websocket: WebSocket, message: Dict[str, Any]):
             logging.warning("Received empty audio_chunk data.")
             return
 
-        audio_bytes = base64.b64decode(audio_bytes_b64)
+        # Input validation
+        if len(audio_bytes_b64) > 5000000:  # 5MB limit
+            logging.warning("Audio chunk too large, skipping")
+            return
+        
+        # Validate base64 format
+        try:
+            audio_bytes = base64.b64decode(audio_bytes_b64, validate=True)
+        except Exception as e:
+            logging.warning(f"Invalid base64 audio data: {e}")
+            return
 
         # 🚨 Buffer safety check before converting to float32
         if len(audio_bytes) % 4 != 0:
@@ -231,6 +319,7 @@ async def handle_image_data(websocket: WebSocket, message: Dict[str, Any]):
 async def handle_llm_query(websocket: WebSocket, message: Dict[str, Any]):
     user_query = message.get("query", "")
     trigger_type = message.get("trigger", "manual")
+    context_type = detect_context_type(get_current_context())
 
     if not user_query.strip():
         await websocket.send_json({"type": "llm_response_error", "message": "Empty query received."})
@@ -238,17 +327,8 @@ async def handle_llm_query(websocket: WebSocket, message: Dict[str, Any]):
 
     current_context = get_current_context()
 
-    prompt = f"""You are a helpful AI desktop assistant.
-You are currently observing the user's screen and listening to their audio.
-Here is the recent context from the user's environment:
----
-{current_context}
----
-
-The user has triggered you with the following query: "{user_query}"
-
-Provide a concise, context-aware response or coaching. If the context is not directly relevant to the query, state that you don't have enough context but still try to provide a general helpful response.
-"""
+    # Enhanced prompt for neurodivergent coding support
+    prompt = build_neurodivergent_prompt(current_context, user_query, context_type)
     logging.info(f"Sending LLM query to Ollama. Context length: {len(current_context)}. Query: {user_query}")
 
     try:
