@@ -1,5 +1,5 @@
 // --- WebSocket Setup ---
-const socket = new WebSocket("ws://localhost:8001/ws");  // Changed from 8000 to 8001
+const socket = new WebSocket("ws://localhost:8001/ws"); // Changed from 8000 to 8001
 
 socket.onopen = () => {
   console.log("✅ Connected to backend");
@@ -200,9 +200,11 @@ function updateUIStatus() {
     audioBtn.classList.toggle("active", audioListeningActive);
     audioStatus.classList.toggle("active", audioListeningActive);
     audioStatus.classList.toggle("breathing", audioListeningActive);
-    audioBtn.querySelector("span").textContent = audioListeningActive ? "Listening..." : "Listen";
+    audioBtn.querySelector("span").textContent = audioListeningActive
+      ? "Listening..."
+      : "Listen";
   }
-  
+
   // Screen monitoring status with Glass effects
   const monitorBtn = document.getElementById("monitor-btn");
   const monitorStatus = document.getElementById("monitor-status");
@@ -210,21 +212,25 @@ function updateUIStatus() {
     monitorBtn.classList.toggle("monitoring", screenMonitoringActive);
     monitorStatus.classList.toggle("monitoring", screenMonitoringActive);
     monitorStatus.classList.toggle("breathing", screenMonitoringActive);
-    monitorBtn.querySelector("span").textContent = screenMonitoringActive ? "Monitoring..." : "Monitor";
+    monitorBtn.querySelector("span").textContent = screenMonitoringActive
+      ? "Monitoring..."
+      : "Monitor";
   }
-  
+
   // Stealth mode status with enhanced Glass effects
   const stealthBtn = document.getElementById("stealth-btn");
   const stealthStatus = document.getElementById("stealth-status");
   const stealthIndicator = document.getElementById("stealth-indicator");
   const mainUI = document.getElementById("main-ui");
-  
+
   if (stealthBtn && stealthStatus) {
     stealthBtn.classList.toggle("stealth", stealthModeActive);
     stealthStatus.classList.toggle("active", stealthModeActive);
     stealthStatus.classList.toggle("breathing", stealthModeActive);
-    stealthBtn.querySelector("span").textContent = stealthModeActive ? "Stealth ON" : "Stealth";
-    
+    stealthBtn.querySelector("span").textContent = stealthModeActive
+      ? "Stealth ON"
+      : "Stealth";
+
     // Glass-inspired auto-hide effect
     if (mainUI) {
       mainUI.classList.toggle("auto-hide", stealthModeActive);
@@ -235,11 +241,11 @@ function updateUIStatus() {
       }
     }
   }
-  
+
   if (stealthIndicator) {
     stealthIndicator.classList.toggle("hidden", !stealthModeActive);
   }
-  
+
   if (mainUI) {
     mainUI.style.display = stealthModeActive ? "none" : "flex";
   }
@@ -255,8 +261,6 @@ document.getElementById("monitor-btn")?.addEventListener("click", () => {
 });
 
 document.getElementById("ask-btn")?.addEventListener("click", () => {
-  const inputBar = document.getElementById("input-bar");
-  const inputBox = document.getElementById("chat-input-box");
   inputBar.hidden = !inputBar.hidden;
   if (!inputBar.hidden) inputBox.focus();
 });
@@ -272,22 +276,20 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     toggleScreenMonitoring();
   }
-  
+
   // Ctrl/Cmd + Shift + S to toggle stealth mode
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "S") {
     e.preventDefault();
     toggleStealthMode();
   }
-  
+
   // Ctrl/Cmd + \ to toggle input
   if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
     e.preventDefault();
-    const inputBar = document.getElementById("input-bar");
-    const inputBox = document.getElementById("chat-input-box");
     inputBar.hidden = !inputBar.hidden;
     if (!inputBar.hidden) inputBox.focus();
   }
-  
+
   // Space to toggle audio (when not typing)
   if (e.code === "Space" && !e.target.matches("input, textarea")) {
     e.preventDefault();
@@ -298,7 +300,7 @@ document.addEventListener("keydown", (e) => {
 // Toggle functions
 async function toggleAudioListening() {
   audioListeningActive = !audioListeningActive;
-  
+
   if (audioListeningActive) {
     await startAudioCapture();
     showNotification("Audio listening started", "success");
@@ -306,7 +308,7 @@ async function toggleAudioListening() {
     stopAudioCapture();
     showNotification("Audio listening stopped", "info");
   }
-  
+
   updateUIStatus();
 }
 
@@ -320,7 +322,7 @@ async function toggleScreenMonitoring() {
     screenMonitoringActive = true;
     showNotification("AI is now watching for coding problems", "success");
   }
-  
+
   updateUIStatus();
 }
 
@@ -328,7 +330,7 @@ async function toggleStealthMode() {
   try {
     const newStealthState = await window.electronAPI?.stealth?.toggle();
     stealthModeActive = newStealthState;
-    
+
     if (stealthModeActive) {
       // Enable stealth mode
       showStealthNotification("Stealth Mode Activated - Cue is now invisible");
@@ -345,7 +347,7 @@ async function toggleStealthMode() {
       showNotification("Stealth mode disabled - Cue is now visible", "info");
     }
   } catch (error) {
-    console.error('Failed to toggle stealth mode:', error);
+    console.error("Failed to toggle stealth mode:", error);
     showNotification("Failed to toggle stealth mode", "error");
   }
 }
@@ -355,7 +357,7 @@ function showStealthNotification(message) {
   notification.className = "stealth-notification";
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     if (notification.parentNode) {
       document.body.removeChild(notification);
@@ -383,12 +385,12 @@ ipcRenderer?.on("send-screen-for-analysis", (event, data) => {
 function showCodingGuidance(guidance) {
   // Create or update guidance panel
   let guidancePanel = document.getElementById("coding-guidance-panel");
-  
+
   if (!guidancePanel) {
     guidancePanel = createGuidancePanel();
     document.body.appendChild(guidancePanel);
   }
-  
+
   updateGuidanceContent(guidancePanel, guidance);
   showGuidancePanel(guidancePanel);
 }
@@ -414,7 +416,7 @@ function createGuidancePanel() {
     backdrop-filter: blur(10px);
     display: none;
   `;
-  
+
   // Add close button
   const closeBtn = document.createElement("button");
   closeBtn.innerHTML = "✕";
@@ -434,10 +436,10 @@ function createGuidancePanel() {
     align-items: center;
     justify-content: center;
   `;
-  closeBtn.onmouseover = () => closeBtn.style.background = "#444";
-  closeBtn.onmouseout = () => closeBtn.style.background = "none";
+  closeBtn.onmouseover = () => (closeBtn.style.background = "#444");
+  closeBtn.onmouseout = () => (closeBtn.style.background = "none");
   closeBtn.onclick = () => hideGuidancePanel(panel);
-  
+
   panel.appendChild(closeBtn);
   return panel;
 }
@@ -447,32 +449,42 @@ function updateGuidanceContent(panel, guidance) {
   const closeBtn = panel.querySelector("button");
   panel.innerHTML = "";
   panel.appendChild(closeBtn);
-  
+
   // Add guidance content
   const content = document.createElement("div");
   content.style.marginTop = "30px";
-  
+
   if (guidance.type === "problem_guidance") {
     content.innerHTML = `
       <div style="margin-bottom: 15px;">
         <h3 style="color: #4CAF50; margin: 0 0 10px 0; font-size: 16px;">
           🎯 ${guidance.platform.toUpperCase()} Problem Detected
         </h3>
-        <p style="margin: 0; line-height: 1.4; color: #ddd;">${guidance.message}</p>
+        <p style="margin: 0; line-height: 1.4; color: #ddd;">${
+          guidance.message
+        }</p>
       </div>
       
       <div style="margin-bottom: 15px;">
         <h4 style="color: #2196F3; margin: 0 0 8px 0; font-size: 14px;">Next Steps:</h4>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-          ${guidance.next_steps.map(step => `<li style="margin-bottom: 4px;">${step}</li>`).join('')}
+          ${guidance.next_steps
+            .map((step) => `<li style="margin-bottom: 4px;">${step}</li>`)
+            .join("")}
         </ul>
       </div>
       
-      ${guidance.analysis.patterns.length > 0 ? `
+      ${
+        guidance.analysis.patterns.length > 0
+          ? `
         <div style="background: rgba(76, 175, 80, 0.1); padding: 10px; border-radius: 4px; border-left: 3px solid #4CAF50;">
-          <strong style="color: #4CAF50;">Patterns Detected:</strong> ${guidance.analysis.patterns.join(', ').replace(/_/g, ' ')}
+          <strong style="color: #4CAF50;">Patterns Detected:</strong> ${guidance.analysis.patterns
+            .join(", ")
+            .replace(/_/g, " ")}
         </div>
-      ` : ''}
+      `
+          : ""
+      }
     `;
   } else if (guidance.type === "progressive_hint") {
     content.innerHTML = `
@@ -480,18 +492,26 @@ function updateGuidanceContent(panel, guidance) {
         <h3 style="color: #FF9800; margin: 0 0 10px 0; font-size: 16px;">
           💡 Hint #${guidance.hint_level}
         </h3>
-        <p style="margin: 0; line-height: 1.4; color: #ddd;">${guidance.message}</p>
+        <p style="margin: 0; line-height: 1.4; color: #ddd;">${
+          guidance.message
+        }</p>
       </div>
       
-      ${guidance.code_template ? `
+      ${
+        guidance.code_template
+          ? `
         <div style="margin-bottom: 15px;">
           <h4 style="color: #9C27B0; margin: 0 0 8px 0; font-size: 14px;">Code Template:</h4>
           <pre style="background: #1a1a1a; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 0;"><code>${guidance.code_template}</code></pre>
         </div>
-      ` : ''}
+      `
+          : ""
+      }
       
       <div style="background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 4px; border-left: 3px solid #2196F3;">
-        <strong style="color: #2196F3;">Remember:</strong> ${guidance.encouragement}
+        <strong style="color: #2196F3;">Remember:</strong> ${
+          guidance.encouragement
+        }
       </div>
     `;
   } else if (guidance.type === "solution_walkthrough") {
@@ -507,22 +527,30 @@ function updateGuidanceContent(panel, guidance) {
       </div>
       
       <div style="margin-bottom: 15px;">
-        <h4 style="color: #4CAF50; margin: 0 0 8px 0; font-size: 14px;">Approach: ${walkthrough.approach}</h4>
+        <h4 style="color: #4CAF50; margin: 0 0 8px 0; font-size: 14px;">Approach: ${
+          walkthrough.approach
+        }</h4>
         <ol style="margin: 0; padding-left: 20px; line-height: 1.6;">
-          ${walkthrough.steps.map(step => `<li style="margin-bottom: 4px;">${step}</li>`).join('')}
+          ${walkthrough.steps
+            .map((step) => `<li style="margin-bottom: 4px;">${step}</li>`)
+            .join("")}
         </ol>
       </div>
       
       <div style="background: rgba(156, 39, 176, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 10px;">
-        <strong style="color: #9C27B0;">Complexity:</strong> ${walkthrough.complexity}
+        <strong style="color: #9C27B0;">Complexity:</strong> ${
+          walkthrough.complexity
+        }
       </div>
       
       <div style="background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 4px;">
-        <strong style="color: #2196F3;">Pro Tip:</strong> ${walkthrough.next_step}
+        <strong style="color: #2196F3;">Pro Tip:</strong> ${
+          walkthrough.next_step
+        }
       </div>
     `;
   }
-  
+
   panel.appendChild(content);
 }
 
@@ -530,7 +558,7 @@ function showGuidancePanel(panel) {
   panel.style.display = "block";
   panel.style.opacity = "0";
   panel.style.transform = "translateX(20px)";
-  
+
   requestAnimationFrame(() => {
     panel.style.transition = "all 0.3s ease-out";
     panel.style.opacity = "1";
@@ -542,7 +570,7 @@ function hideGuidancePanel(panel) {
   panel.style.transition = "all 0.3s ease-out";
   panel.style.opacity = "0";
   panel.style.transform = "translateX(20px)";
-  
+
   setTimeout(() => {
     panel.style.display = "none";
   }, 300);
@@ -552,11 +580,11 @@ function showNotification(message, type = "info") {
   const notification = document.createElement("div");
   const colors = {
     success: "#4CAF50",
-    error: "#f44336", 
+    error: "#f44336",
     info: "#2196F3",
-    warning: "#FF9800"
+    warning: "#FF9800",
   };
-  
+
   notification.style.cssText = `
     position: fixed;
     top: 20px;
@@ -571,15 +599,15 @@ function showNotification(message, type = "info") {
     transform: translateX(100px);
     transition: all 0.3s ease-out;
   `;
-  
+
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   requestAnimationFrame(() => {
     notification.style.opacity = "1";
     notification.style.transform = "translateX(0)";
   });
-  
+
   setTimeout(() => {
     notification.style.opacity = "0";
     notification.style.transform = "translateX(100px)";
@@ -588,12 +616,12 @@ function showNotification(message, type = "info") {
 }
 
 // Initialize UI on load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   updateUIStatus();
 });
 
 // Also initialize when window loads
-window.addEventListener('load', () => {
+window.addEventListener("load", () => {
   updateUIStatus();
   checkBackendStatus();
 });
@@ -604,14 +632,14 @@ async function checkBackendStatus() {
     const status = await window.electronAPI?.backend?.getStatus();
     backendConnected = status?.isRunning || false;
     updateUIStatus();
-    
+
     if (!backendConnected && status?.pythonFound === false) {
       showNotification("Python not found. Please install Python 3.8+", "error");
     } else if (!backendConnected) {
       showNotification("Backend starting...", "info");
     }
   } catch (error) {
-    console.error('Failed to check backend status:', error);
+    console.error("Failed to check backend status:", error);
   }
 }
 
@@ -624,7 +652,7 @@ socket.onopen = () => {
 };
 
 socket.onclose = () => {
-  console.log("🔌 Disconnected from backend");  
+  console.log("🔌 Disconnected from backend");
   backendConnected = false;
   updateUIStatus();
   showNotification("Backend disconnected - retrying...", "warning");
