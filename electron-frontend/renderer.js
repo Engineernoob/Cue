@@ -51,27 +51,7 @@ const closeThinkingBtn = document.querySelector(".close-icon");
 const promptBox = document.getElementById("prompt-box");
 
 // --- Audio Session Handling ---
-let sessionActive = false;
 let mediaRecorder = null;
-
-document.getElementById("listen-btn")?.addEventListener("click", async () => {
-  if (!sessionActive) {
-    sessionActive = true;
-    updateListenButton();
-    await startAudioCapture();
-  } else {
-    sessionActive = false;
-    updateListenButton();
-    stopAudioCapture();
-  }
-});
-
-function updateListenButton() {
-  const btn = document.getElementById("listen-btn");
-  if (btn) {
-    btn.textContent = sessionActive ? "Pause ⏸" : "Listen ▶️";
-  }
-}
 
 // --- Ask Button: Show Input Bar ---
 document.getElementById("ask-btn")?.addEventListener("click", () => {
@@ -196,6 +176,7 @@ ipcRenderer?.on("hide-response", () => {
 let screenMonitoringActive = false;
 let stealthModeActive = false;
 let audioListeningActive = false;
+let backendConnected = false;
 
 // UI Status Management
 function updateUIStatus() {
@@ -290,7 +271,6 @@ document.addEventListener("keydown", (e) => {
 
 // Toggle functions
 async function toggleAudioListening() {
-  // This will connect to the existing audio capture logic
   audioListeningActive = !audioListeningActive;
   
   if (audioListeningActive) {
@@ -319,22 +299,28 @@ async function toggleScreenMonitoring() {
 }
 
 async function toggleStealthMode() {
-  stealthModeActive = !stealthModeActive;
-  
-  if (stealthModeActive) {
-    // Enable stealth mode
-    showStealthNotification("Stealth Mode Activated - Cue is now invisible");
-    setTimeout(() => {
+  try {
+    const newStealthState = await window.electronAPI?.stealth?.toggle();
+    stealthModeActive = newStealthState;
+    
+    if (stealthModeActive) {
+      // Enable stealth mode
+      showStealthNotification("Stealth Mode Activated - Cue is now invisible");
+      setTimeout(() => {
+        updateUIStatus();
+        // Start screen monitoring automatically in stealth mode
+        if (!screenMonitoringActive) {
+          screenMonitoringActive = true;
+          window.electronAPI?.screenMonitor?.start();
+        }
+      }, 2000);
+    } else {
       updateUIStatus();
-      // Start screen monitoring automatically in stealth mode
-      if (!screenMonitoringActive) {
-        screenMonitoringActive = true;
-        window.electronAPI?.screenMonitor?.start();
-      }
-    }, 2000);
-  } else {
-    updateUIStatus();
-    showNotification("Stealth mode disabled - Cue is now visible", "info");
+      showNotification("Stealth mode disabled - Cue is now visible", "info");
+    }
+  } catch (error) {
+    console.error('Failed to toggle stealth mode:', error);
+    showNotification("Failed to toggle stealth mode", "error");
   }
 }
 
@@ -363,7 +349,9 @@ ipcRenderer?.on("screen-monitoring-status", (event, status) => {
 
 // Send screen data for analysis
 ipcRenderer?.on("send-screen-for-analysis", (event, data) => {
-  ipcRenderer?.send("image-data-chunk", data.imageData);
+  if (data && data.imageData) {
+    ipcRenderer?.send("image-data-chunk", data.imageData);
+  }
 });
 
 function showCodingGuidance(guidance) {
@@ -572,3 +560,51 @@ function showNotification(message, type = "info") {
     setTimeout(() => document.body.removeChild(notification), 300);
   }, 4000);
 }
+
+// Initialize UI on load
+document.addEventListener('DOMContentLoaded', () => {
+  updateUIStatus();
+});
+
+// Also initialize when window loads
+window.addEventListener('load', () => {
+  updateUIStatus();
+  checkBackendStatus();
+});
+
+// Backend status monitoring
+async function checkBackendStatus() {
+  try {
+    const status = await window.electronAPI?.backend?.getStatus();
+    backendConnected = status?.isRunning || false;
+    updateUIStatus();
+    
+    if (!backendConnected && status?.pythonFound === false) {
+      showNotification("Python not found. Please install Python 3.8+", "error");
+    } else if (!backendConnected) {
+      showNotification("Backend starting...", "info");
+    }
+  } catch (error) {
+    console.error('Failed to check backend status:', error);
+  }
+}
+
+// Listen for backend connection status
+socket.onopen = () => {
+  console.log("✅ Connected to backend");
+  backendConnected = true;
+  updateUIStatus();
+  showNotification("AI backend connected", "success");
+};
+
+socket.onclose = () => {
+  console.log("🔌 Disconnected from backend");  
+  backendConnected = false;
+  updateUIStatus();
+  showNotification("Backend disconnected - retrying...", "warning");
+};
+
+socket.onerror = () => {
+  backendConnected = false;
+  updateUIStatus();
+};

@@ -41,5 +41,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Coding guidance callbacks
     onCodingGuidance: (callback) => ipcRenderer.on('coding-guidance', (event, guidance) => callback(guidance)),
-    onScreenMonitoringStatus: (callback) => ipcRenderer.on('screen-monitoring-status', (event, status) => callback(status))
+    onScreenMonitoringStatus: (callback) => ipcRenderer.on('screen-monitoring-status', (event, status) => callback(status)),
+
+    // Stealth mode API
+    stealth: {
+        enable: () => ipcRenderer.invoke('stealth:enable'),
+        disable: () => ipcRenderer.invoke('stealth:disable'),
+        toggle: () => ipcRenderer.invoke('stealth:toggle')
+    },
+
+    // Backend management API
+    backend: {
+        getStatus: () => ipcRenderer.invoke('backend:status'),
+        restart: () => ipcRenderer.invoke('backend:restart'),
+        healthCheck: () => ipcRenderer.invoke('backend:health'),
+        stop: () => ipcRenderer.invoke('backend:stop')
+    }
 });

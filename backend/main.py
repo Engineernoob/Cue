@@ -31,7 +31,6 @@ WHISPER_COMPUTE_TYPE = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
 CONTEXT_BUFFER_MAX_LENGTH = 2000
 CONTEXT_BUFFER_MAX_TIME_SECONDS = 300
 
-app = FastAPI()
 whisper_model: Optional[WhisperModel] = None
 context_buffer = deque()
 context_lock = threading.Lock()
@@ -192,9 +191,17 @@ async def send_live_insights_periodically(websocket: WebSocket):
             break
         await asyncio.sleep(5)
 
-@app.on_event("startup")
-async def startup_event():
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     threading.Thread(target=load_whisper_model).start()
+    yield
+    # Shutdown (if needed)
+    pass
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/health")
 async def health_check():

@@ -14,6 +14,7 @@ const { registerNeurodivergentHandlers } = require("./neurodivergentSupport");
 const { registerCodingAssessmentHandlers } = require("./codingAssessmentHelper");
 const { createScreenMonitor } = require("./screenMonitor");
 const { createStealthManager, registerStealthHandlers } = require("./stealthMode");
+const backendManager = require("./backendManager");
 const { getConfig } = require("./config");
 
 const PYTHON_BACKEND_WS_URL = getConfig('backend.wsUrl');
@@ -73,9 +74,24 @@ let codingAssessmentHelper;
 let screenMonitor;
 let stealthManager;
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createWindow();
-  connectToPythonBackend();
+  
+  // Start backend first, then connect
+  try {
+    console.log('🚀 Starting integrated backend...');
+    await backendManager.startBackend();
+    
+    // Wait a moment for backend to fully initialize
+    setTimeout(() => {
+      connectToPythonBackend();
+    }, 2000);
+    
+  } catch (error) {
+    console.error('❌ Failed to start backend:', error);
+    // Continue without backend - user will see connection error
+    connectToPythonBackend();
+  }
   
   // Initialize all managers
   registerSessionHandlers();
@@ -87,8 +103,12 @@ app.whenReady().then(() => {
   
   // Register IPC handlers
   registerScreenMonitorHandlers();
+  registerBackendHandlers();
   const stealthHotkeys = registerStealthHandlers(stealthManager);
   registerGlobalShortcuts(stealthHotkeys);
+  
+  // Start health monitoring
+  backendManager.startHealthMonitoring();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -266,7 +286,11 @@ function registerGlobalShortcuts(stealthHotkeys) {
     // Screen monitoring toggle
     globalShortcut.register('CommandOrControl+Shift+M', () => {
       console.log('Global shortcut: Screen monitoring toggle');
-      screenMonitor?.isMonitoring ? screenMonitor.stopMonitoring() : screenMonitor.startMonitoring();
+      if (screenMonitor?.isMonitoring) {
+        screenMonitor.stopMonitoring();
+      } else {
+        screenMonitor?.startMonitoring();
+      }
     });
 
     // Stealth mode toggle
@@ -296,4 +320,29 @@ function registerGlobalShortcuts(stealthHotkeys) {
   } catch (error) {
     console.error('Failed to register global shortcuts:', error);
   }
+}
+
+// --- Backend IPC Handlers ---
+function registerBackendHandlers() {
+  ipcMain.handle('backend:status', () => {
+    return backendManager.getStatus();
+  });
+
+  ipcMain.handle('backend:restart', async () => {
+    try {
+      await backendManager.restartBackend();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('backend:health', async () => {
+    return await backendManager.healthCheck();
+  });
+
+  ipcMain.handle('backend:stop', () => {
+    backendManager.stopBackend();
+    return { success: true };
+  });
 }
