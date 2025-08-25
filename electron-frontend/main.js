@@ -13,6 +13,7 @@ const { registerCoachingHandlers } = require("./coachingEngine");
 const { registerNeurodivergentHandlers } = require("./neurodivergentSupport");
 const { registerCodingAssessmentHandlers } = require("./codingAssessmentHelper");
 const { createScreenMonitor } = require("./screenMonitor");
+const { createStealthManager, registerStealthHandlers } = require("./stealthMode");
 const { getConfig } = require("./config");
 
 const PYTHON_BACKEND_WS_URL = getConfig('backend.wsUrl');
@@ -70,19 +71,24 @@ function createWindow() {
 let neurodivergentSupport;
 let codingAssessmentHelper;
 let screenMonitor;
+let stealthManager;
 
 app.whenReady().then(() => {
   createWindow();
   connectToPythonBackend();
-  // Removed registerGlobalShortcuts();
+  
+  // Initialize all managers
   registerSessionHandlers();
   registerCoachingHandlers();
   neurodivergentSupport = registerNeurodivergentHandlers(mainWindow);
   codingAssessmentHelper = registerCodingAssessmentHandlers(mainWindow);
   screenMonitor = createScreenMonitor(mainWindow);
+  stealthManager = createStealthManager(mainWindow);
   
-  // Register screen monitor IPC handlers
+  // Register IPC handlers
   registerScreenMonitorHandlers();
+  const stealthHotkeys = registerStealthHandlers(stealthManager);
+  registerGlobalShortcuts(stealthHotkeys);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -250,4 +256,44 @@ function registerScreenMonitorHandlers() {
       }));
     }
   });
+}
+
+// --- Global Shortcuts ---
+function registerGlobalShortcuts(stealthHotkeys) {
+  const { globalShortcut } = require('electron');
+  
+  try {
+    // Screen monitoring toggle
+    globalShortcut.register('CommandOrControl+Shift+M', () => {
+      console.log('Global shortcut: Screen monitoring toggle');
+      screenMonitor?.isMonitoring ? screenMonitor.stopMonitoring() : screenMonitor.startMonitoring();
+    });
+
+    // Stealth mode toggle
+    globalShortcut.register(stealthHotkeys['stealth-toggle'], () => {
+      console.log('Global shortcut: Stealth mode toggle');
+      stealthManager?.handleStealthHotkey('stealth-toggle');
+    });
+
+    // Stealth guidance
+    globalShortcut.register(stealthHotkeys['stealth-guidance'], () => {
+      console.log('Global shortcut: Stealth guidance');
+      stealthManager?.handleStealthHotkey('stealth-guidance');
+    });
+
+    // Stealth hint
+    globalShortcut.register(stealthHotkeys['stealth-hint'], () => {
+      console.log('Global shortcut: Stealth hint');
+      stealthManager?.handleStealthHotkey('stealth-hint');
+    });
+
+    // General input toggle
+    globalShortcut.register('CommandOrControl+\\', () => {
+      console.log('Global shortcut: Input toggle');
+      mainWindow?.webContents.send('toggle-input');
+    });
+
+  } catch (error) {
+    console.error('Failed to register global shortcuts:', error);
+  }
 }

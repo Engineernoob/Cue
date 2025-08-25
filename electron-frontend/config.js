@@ -19,7 +19,10 @@ const configStore = new Store({
     ui: {
       opacity: 0.9,
       alwaysOnTop: true,
-      position: { x: 'center', y: 30 }
+      position: { x: 'center', y: 30 },
+      stealthMode: false, // When true, completely invisible like Cluely
+      showOnlyWhenNeeded: false, // Only show UI when guidance is needed
+      hideDuringScreenShare: true // Hide when screen sharing is detected
     },
     neurodivergent: {
       adhd: {

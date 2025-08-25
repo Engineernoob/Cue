@@ -7,20 +7,30 @@
   </head>
   <body>
     <!-- 🔹 Floating Glass Bar -->
-    <div class="glass-bar">
-      <button class="glass-btn" id="listen-btn" title="Start/Stop Listening">
-        Listen ⏸
+    <div class="glass-bar" id="main-ui">
+      <button class="glass-btn" id="listen-btn" title="Start/Stop Audio Listening">
+        <span>Listen</span>
+        <div class="ai-status-dot" id="audio-status"></div>
+        <div class="keyboard-hint">Space</div>
       </button>
-      <button class="glass-btn" id="ask-btn" title="Ask a Question">
-        Ask ⌘↩
+      <button class="glass-btn" id="monitor-btn" title="Toggle AI Screen Monitoring">
+        <span>Monitor</span>
+        <div class="ai-status-dot" id="monitor-status"></div>
+        <div class="keyboard-hint">Ctrl+Shift+M</div>
       </button>
-      <button class="glass-btn" id="toggle-btn" title="Show/Hide Overlay">
-        Show/Hide ⌘\\
+      <button class="glass-btn" id="ask-btn" title="Ask AI a Question">
+        <span>Ask</span>
+        <div class="keyboard-hint">Ctrl+\\</div>
       </button>
-      <button class="glass-btn" id="menu-btn" disabled title="More Options">
-        ⋯
+      <button class="glass-btn" id="stealth-btn" title="Toggle Stealth Mode (Invisible)">
+        <span>Stealth</span>
+        <div class="ai-status-dot" id="stealth-status"></div>
+        <div class="keyboard-hint">Ctrl+Shift+S</div>
       </button>
     </div>
+
+    <!-- 🥷 Stealth Mode Indicator (always visible when in stealth) -->
+    <div class="stealth-status hidden" id="stealth-indicator"></div>
 
     <!-- 🔹 Input Prompt Box -->
     <div id="input-bar" class="input-bar" hidden>

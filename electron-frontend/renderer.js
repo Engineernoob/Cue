@@ -192,24 +192,117 @@ ipcRenderer?.on("hide-response", () => {
   responseBox.hidden = true;
 });
 
-// Screen monitoring controls
+// Application state
 let screenMonitoringActive = false;
+let stealthModeActive = false;
+let audioListeningActive = false;
 
-document.getElementById("menu-btn")?.addEventListener("click", () => {
-  ipcRenderer?.send("open-menu");
+// UI Status Management
+function updateUIStatus() {
+  // Audio status
+  const audioBtn = document.getElementById("listen-btn");
+  const audioStatus = document.getElementById("audio-status");
+  if (audioBtn && audioStatus) {
+    audioBtn.classList.toggle("active", audioListeningActive);
+    audioStatus.classList.toggle("active", audioListeningActive);
+    audioBtn.querySelector("span").textContent = audioListeningActive ? "Listening..." : "Listen";
+  }
+  
+  // Screen monitoring status  
+  const monitorBtn = document.getElementById("monitor-btn");
+  const monitorStatus = document.getElementById("monitor-status");
+  if (monitorBtn && monitorStatus) {
+    monitorBtn.classList.toggle("monitoring", screenMonitoringActive);
+    monitorStatus.classList.toggle("monitoring", screenMonitoringActive);
+    monitorBtn.querySelector("span").textContent = screenMonitoringActive ? "Monitoring..." : "Monitor";
+  }
+  
+  // Stealth mode status
+  const stealthBtn = document.getElementById("stealth-btn");
+  const stealthStatus = document.getElementById("stealth-status");
+  const stealthIndicator = document.getElementById("stealth-indicator");
+  const mainUI = document.getElementById("main-ui");
+  
+  if (stealthBtn && stealthStatus) {
+    stealthBtn.classList.toggle("active", stealthModeActive);
+    stealthStatus.classList.toggle("active", stealthModeActive);
+    stealthBtn.querySelector("span").textContent = stealthModeActive ? "Stealth ON" : "Stealth";
+  }
+  
+  if (stealthIndicator) {
+    stealthIndicator.classList.toggle("hidden", !stealthModeActive);
+  }
+  
+  if (mainUI) {
+    mainUI.style.display = stealthModeActive ? "none" : "flex";
+  }
+}
+
+// Button event handlers
+document.getElementById("listen-btn")?.addEventListener("click", () => {
+  toggleAudioListening();
 });
 
-document.getElementById("toggle-btn")?.addEventListener("click", () => {
-  ipcRenderer?.send("toggle-overlay");
+document.getElementById("monitor-btn")?.addEventListener("click", () => {
+  toggleScreenMonitoring();
 });
 
-// Add screen monitoring toggle
+document.getElementById("ask-btn")?.addEventListener("click", () => {
+  const inputBar = document.getElementById("input-bar");
+  const inputBox = document.getElementById("chat-input-box");
+  inputBar.hidden = !inputBar.hidden;
+  if (!inputBar.hidden) inputBox.focus();
+});
+
+document.getElementById("stealth-btn")?.addEventListener("click", () => {
+  toggleStealthMode();
+});
+
+// Global keyboard shortcuts
 document.addEventListener("keydown", (e) => {
   // Ctrl/Cmd + Shift + M to toggle screen monitoring
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "M") {
+    e.preventDefault();
     toggleScreenMonitoring();
   }
+  
+  // Ctrl/Cmd + Shift + S to toggle stealth mode
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "S") {
+    e.preventDefault();
+    toggleStealthMode();
+  }
+  
+  // Ctrl/Cmd + \ to toggle input
+  if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+    e.preventDefault();
+    const inputBar = document.getElementById("input-bar");
+    const inputBox = document.getElementById("chat-input-box");
+    inputBar.hidden = !inputBar.hidden;
+    if (!inputBar.hidden) inputBox.focus();
+  }
+  
+  // Space to toggle audio (when not typing)
+  if (e.code === "Space" && !e.target.matches("input, textarea")) {
+    e.preventDefault();
+    toggleAudioListening();
+  }
 });
+
+// Toggle functions
+async function toggleAudioListening() {
+  // This will connect to the existing audio capture logic
+  audioListeningActive = !audioListeningActive;
+  
+  if (audioListeningActive) {
+    await startAudioCapture();
+    showNotification("Audio listening started", "success");
+  } else {
+    stopAudioCapture();
+    showNotification("Audio listening stopped", "info");
+  }
+  
+  updateUIStatus();
+}
 
 async function toggleScreenMonitoring() {
   if (screenMonitoringActive) {
@@ -221,6 +314,41 @@ async function toggleScreenMonitoring() {
     screenMonitoringActive = true;
     showNotification("AI is now watching for coding problems", "success");
   }
+  
+  updateUIStatus();
+}
+
+async function toggleStealthMode() {
+  stealthModeActive = !stealthModeActive;
+  
+  if (stealthModeActive) {
+    // Enable stealth mode
+    showStealthNotification("Stealth Mode Activated - Cue is now invisible");
+    setTimeout(() => {
+      updateUIStatus();
+      // Start screen monitoring automatically in stealth mode
+      if (!screenMonitoringActive) {
+        screenMonitoringActive = true;
+        window.electronAPI?.screenMonitor?.start();
+      }
+    }, 2000);
+  } else {
+    updateUIStatus();
+    showNotification("Stealth mode disabled - Cue is now visible", "info");
+  }
+}
+
+function showStealthNotification(message) {
+  const notification = document.createElement("div");
+  notification.className = "stealth-notification";
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    if (notification.parentNode) {
+      document.body.removeChild(notification);
+    }
+  }, 3000);
 }
 
 // Listen for coding guidance from the AI

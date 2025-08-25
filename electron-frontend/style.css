@@ -48,6 +48,148 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.glass-btn:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+}
+
+.glass-btn.active {
+  background: rgba(76, 175, 80, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+.glass-btn.monitoring {
+  background: rgba(33, 150, 243, 0.3);
+  border: 1px solid rgba(33, 150, 243, 0.5);
+  position: relative;
+}
+
+.glass-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* AI Status Indicator */
+.ai-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  animation: pulse 2s infinite;
+}
+
+.ai-status-dot.active {
+  background: #4CAF50;
+  box-shadow: 0 0 4px #4CAF50;
+}
+
+.ai-status-dot.monitoring {
+  background: #2196F3;
+  box-shadow: 0 0 4px #2196F3;
+}
+
+.ai-status-dot.thinking {
+  background: #FF9800;
+  box-shadow: 0 0 4px #FF9800;
+}
+
+.ai-status-dot.error {
+  background: #f44336;
+  box-shadow: 0 0 4px #f44336;
+  animation: none;
+}
+
+/* Status Bar for Stealth Mode */
+.stealth-status {
+  position: fixed;
+  top: 5px;
+  right: 5px;
+  width: 12px;
+  height: 12px;
+  background: rgba(76, 175, 80, 0.8);
+  border-radius: 50%;
+  z-index: 10000;
+  animation: stealth-pulse 3s infinite;
+  pointer-events: none;
+}
+
+.stealth-status.hidden {
+  display: none;
+}
+
+/* Keyboard Navigation Hints */
+.keyboard-hint {
+  position: absolute;
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  opacity: 0.6;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.glass-btn:focus .keyboard-hint {
+  opacity: 1;
+}
+
+/* Stealth Mode Notification */
+.stealth-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #4CAF50;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 10001;
+  animation: fade-in-out 3s ease;
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  .ai-status-dot,
+  .stealth-status {
+    animation: none;
+  }
+}
+
+.high-contrast .glass-btn {
+  border: 2px solid white;
+}
+
+.high-contrast .glass-btn:focus {
+  outline: 3px solid #FFD700;
+}
+
+/* Enhanced Animations */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes stealth-pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.3; }
+}
+
+@keyframes fade-in-out {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+
 /* ───── Coaching Box ───── */
 .coaching-box {
   position: absolute;
