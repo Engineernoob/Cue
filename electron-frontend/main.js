@@ -11,6 +11,8 @@ const WebSocket = require("ws");
 const { registerSessionHandlers } = require("./sessionManager");
 const { registerCoachingHandlers } = require("./coachingEngine");
 const { registerNeurodivergentHandlers } = require("./neurodivergentSupport");
+const { registerCodingAssessmentHandlers } = require("./codingAssessmentHelper");
+const { createScreenMonitor } = require("./screenMonitor");
 const { getConfig } = require("./config");
 
 const PYTHON_BACKEND_WS_URL = getConfig('backend.wsUrl');
@@ -66,6 +68,8 @@ function createWindow() {
 
 // --- Lifecycle ---
 let neurodivergentSupport;
+let codingAssessmentHelper;
+let screenMonitor;
 
 app.whenReady().then(() => {
   createWindow();
@@ -74,6 +78,11 @@ app.whenReady().then(() => {
   registerSessionHandlers();
   registerCoachingHandlers();
   neurodivergentSupport = registerNeurodivergentHandlers(mainWindow);
+  codingAssessmentHelper = registerCodingAssessmentHandlers(mainWindow);
+  screenMonitor = createScreenMonitor(mainWindow);
+  
+  // Register screen monitor IPC handlers
+  registerScreenMonitorHandlers();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -107,6 +116,11 @@ function connectToPythonBackend() {
 
     if (msg.type === "coaching_prompt") {
       mainWindow?.webContents.send("show-coaching-prompt", msg.payload);
+    }
+
+    // Handle coding problem detection from backend
+    if (msg.type === "coding_problem_detected") {
+      screenMonitor?.onProblemDetected(msg);
     }
 
     if (!mainWindow?.isVisible()) {
@@ -203,3 +217,37 @@ ipcMain.handle("get-desktop-sources", async (_event, options) => {
     thumbnail: src.thumbnail?.toDataURL() ?? null,
   }));
 });
+
+// --- Screen Monitor IPC Handlers ---
+function registerScreenMonitorHandlers() {
+  ipcMain.handle('screen-monitor:start', () => {
+    screenMonitor?.startMonitoring();
+    return true;
+  });
+
+  ipcMain.handle('screen-monitor:stop', () => {
+    screenMonitor?.stopMonitoring();
+    return true;
+  });
+
+  ipcMain.handle('screen-monitor:get-solution-walkthrough', () => {
+    screenMonitor?.provideSolutionWalkthrough();
+    return true;
+  });
+
+  ipcMain.handle('screen-monitor:update-progress', (_event, stage) => {
+    screenMonitor?.updateProgress(stage);
+    return true;
+  });
+
+  // Handle screen analysis requests from renderer
+  ipcMain.on('send-screen-for-analysis', (_event, data) => {
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ 
+        type: "image_data", 
+        data: data.imageData,
+        context: 'screen_monitoring'
+      }));
+    }
+  });
+}

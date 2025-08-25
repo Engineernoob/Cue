@@ -19,6 +19,32 @@ const coachingPrompts = {
     "It's fine to start with a brute force approach, then optimize."
   ],
   
+  coding_assessment: [
+    "LeetCode/HackerRank detected: Read the problem statement twice before starting.",
+    "Look for patterns: Array? Use two pointers. Tree? Think DFS/BFS. Optimization? Try DP.",
+    "Start simple: Get a working solution first, optimize later.",
+    "Stuck? Work through the smallest example step by step.",
+    "Time pressure? Focus on correctness over perfect code style.",
+    "Remember: Understanding the pattern is more important than memorizing solutions."
+  ],
+  
+  algorithm_hints: [
+    "Two Pointers: One from start, one from end, move based on comparison.",
+    "Sliding Window: Expand right, contract left when condition is violated.", 
+    "Binary Search: Eliminate half the search space each iteration.",
+    "DFS: Go deep first, backtrack when you hit a dead end.",
+    "BFS: Explore level by level, use a queue.",
+    "Dynamic Programming: Break into subproblems, store results to avoid recomputation."
+  ],
+  
+  stuck_help: [
+    "Been stuck for 5+ minutes? Draw out the problem visually.",
+    "Try the brute force approach first - optimization comes later.",
+    "Read the problem aloud - sometimes you miss important details.",
+    "Look at the constraints: they often hint at the expected solution approach.",
+    "Start with the simplest input case and work your way up."
+  ],
+  
   debugging: [
     "Check your variable names and types first.",
     "Add console.log or print statements to track values.",
@@ -72,13 +98,22 @@ function getPrompt(type = "default", context = {}) {
   
   // Detect coding context
   if (context.text && isCodeRelated(context.text)) {
-    if (context.text.includes('debug') || context.text.includes('error')) {
+    // Check for coding assessment platforms
+    const assessmentSites = ['leetcode', 'hackerrank', 'codility', 'codesignal'];
+    if (assessmentSites.some(site => context.text.toLowerCase().includes(site))) {
+      selectedType = 'coding_assessment';
+    } else if (context.text.includes('debug') || context.text.includes('error')) {
       selectedType = 'debugging';
     } else if (context.text.includes('algorithm') || context.text.includes('optimize')) {
-      selectedType = 'algorithm';
+      selectedType = 'algorithm_hints';
     } else if (type === 'interview') {
       selectedType = 'coding_interview';
     }
+  }
+  
+  // Detect if user has been stuck for a while
+  if (context.stuckTime && context.stuckTime > 300000) { // 5 minutes
+    selectedType = 'stuck_help';
   }
   
   // Apply neurodivergent-specific support

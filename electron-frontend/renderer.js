@@ -192,6 +192,9 @@ ipcRenderer?.on("hide-response", () => {
   responseBox.hidden = true;
 });
 
+// Screen monitoring controls
+let screenMonitoringActive = false;
+
 document.getElementById("menu-btn")?.addEventListener("click", () => {
   ipcRenderer?.send("open-menu");
 });
@@ -199,3 +202,245 @@ document.getElementById("menu-btn")?.addEventListener("click", () => {
 document.getElementById("toggle-btn")?.addEventListener("click", () => {
   ipcRenderer?.send("toggle-overlay");
 });
+
+// Add screen monitoring toggle
+document.addEventListener("keydown", (e) => {
+  // Ctrl/Cmd + Shift + M to toggle screen monitoring
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "M") {
+    toggleScreenMonitoring();
+  }
+});
+
+async function toggleScreenMonitoring() {
+  if (screenMonitoringActive) {
+    await window.electronAPI?.screenMonitor?.stop();
+    screenMonitoringActive = false;
+    showNotification("Screen monitoring stopped", "info");
+  } else {
+    await window.electronAPI?.screenMonitor?.start();
+    screenMonitoringActive = true;
+    showNotification("AI is now watching for coding problems", "success");
+  }
+}
+
+// Listen for coding guidance from the AI
+ipcRenderer?.on("coding-guidance", (event, guidance) => {
+  showCodingGuidance(guidance);
+});
+
+ipcRenderer?.on("screen-monitoring-status", (event, status) => {
+  screenMonitoringActive = status.monitoring;
+  showNotification(status.message, status.monitoring ? "success" : "info");
+});
+
+// Send screen data for analysis
+ipcRenderer?.on("send-screen-for-analysis", (event, data) => {
+  ipcRenderer?.send("image-data-chunk", data.imageData);
+});
+
+function showCodingGuidance(guidance) {
+  // Create or update guidance panel
+  let guidancePanel = document.getElementById("coding-guidance-panel");
+  
+  if (!guidancePanel) {
+    guidancePanel = createGuidancePanel();
+    document.body.appendChild(guidancePanel);
+  }
+  
+  updateGuidanceContent(guidancePanel, guidance);
+  showGuidancePanel(guidancePanel);
+}
+
+function createGuidancePanel() {
+  const panel = document.createElement("div");
+  panel.id = "coding-guidance-panel";
+  panel.style.cssText = `
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    width: 400px;
+    max-height: 500px;
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    color: #fff;
+    font-family: system-ui, sans-serif;
+    z-index: 10000;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+    display: none;
+  `;
+  
+  // Add close button
+  const closeBtn = document.createElement("button");
+  closeBtn.innerHTML = "✕";
+  closeBtn.style.cssText = `
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  closeBtn.onmouseover = () => closeBtn.style.background = "#444";
+  closeBtn.onmouseout = () => closeBtn.style.background = "none";
+  closeBtn.onclick = () => hideGuidancePanel(panel);
+  
+  panel.appendChild(closeBtn);
+  return panel;
+}
+
+function updateGuidanceContent(panel, guidance) {
+  // Clear previous content (except close button)
+  const closeBtn = panel.querySelector("button");
+  panel.innerHTML = "";
+  panel.appendChild(closeBtn);
+  
+  // Add guidance content
+  const content = document.createElement("div");
+  content.style.marginTop = "30px";
+  
+  if (guidance.type === "problem_guidance") {
+    content.innerHTML = `
+      <div style="margin-bottom: 15px;">
+        <h3 style="color: #4CAF50; margin: 0 0 10px 0; font-size: 16px;">
+          🎯 ${guidance.platform.toUpperCase()} Problem Detected
+        </h3>
+        <p style="margin: 0; line-height: 1.4; color: #ddd;">${guidance.message}</p>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <h4 style="color: #2196F3; margin: 0 0 8px 0; font-size: 14px;">Next Steps:</h4>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+          ${guidance.next_steps.map(step => `<li style="margin-bottom: 4px;">${step}</li>`).join('')}
+        </ul>
+      </div>
+      
+      ${guidance.analysis.patterns.length > 0 ? `
+        <div style="background: rgba(76, 175, 80, 0.1); padding: 10px; border-radius: 4px; border-left: 3px solid #4CAF50;">
+          <strong style="color: #4CAF50;">Patterns Detected:</strong> ${guidance.analysis.patterns.join(', ').replace(/_/g, ' ')}
+        </div>
+      ` : ''}
+    `;
+  } else if (guidance.type === "progressive_hint") {
+    content.innerHTML = `
+      <div style="margin-bottom: 15px;">
+        <h3 style="color: #FF9800; margin: 0 0 10px 0; font-size: 16px;">
+          💡 Hint #${guidance.hint_level}
+        </h3>
+        <p style="margin: 0; line-height: 1.4; color: #ddd;">${guidance.message}</p>
+      </div>
+      
+      ${guidance.code_template ? `
+        <div style="margin-bottom: 15px;">
+          <h4 style="color: #9C27B0; margin: 0 0 8px 0; font-size: 14px;">Code Template:</h4>
+          <pre style="background: #1a1a1a; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 0;"><code>${guidance.code_template}</code></pre>
+        </div>
+      ` : ''}
+      
+      <div style="background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 4px; border-left: 3px solid #2196F3;">
+        <strong style="color: #2196F3;">Remember:</strong> ${guidance.encouragement}
+      </div>
+    `;
+  } else if (guidance.type === "solution_walkthrough") {
+    const walkthrough = guidance.walkthrough;
+    content.innerHTML = `
+      <div style="margin-bottom: 15px;">
+        <h3 style="color: #f44336; margin: 0 0 10px 0; font-size: 16px;">
+          🔍 Solution Walkthrough
+        </h3>
+        <div style="background: rgba(244, 67, 54, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+          <strong style="color: #f44336;">⚠️ ${guidance.warning}</strong>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <h4 style="color: #4CAF50; margin: 0 0 8px 0; font-size: 14px;">Approach: ${walkthrough.approach}</h4>
+        <ol style="margin: 0; padding-left: 20px; line-height: 1.6;">
+          ${walkthrough.steps.map(step => `<li style="margin-bottom: 4px;">${step}</li>`).join('')}
+        </ol>
+      </div>
+      
+      <div style="background: rgba(156, 39, 176, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+        <strong style="color: #9C27B0;">Complexity:</strong> ${walkthrough.complexity}
+      </div>
+      
+      <div style="background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 4px;">
+        <strong style="color: #2196F3;">Pro Tip:</strong> ${walkthrough.next_step}
+      </div>
+    `;
+  }
+  
+  panel.appendChild(content);
+}
+
+function showGuidancePanel(panel) {
+  panel.style.display = "block";
+  panel.style.opacity = "0";
+  panel.style.transform = "translateX(20px)";
+  
+  requestAnimationFrame(() => {
+    panel.style.transition = "all 0.3s ease-out";
+    panel.style.opacity = "1";
+    panel.style.transform = "translateX(0)";
+  });
+}
+
+function hideGuidancePanel(panel) {
+  panel.style.transition = "all 0.3s ease-out";
+  panel.style.opacity = "0";
+  panel.style.transform = "translateX(20px)";
+  
+  setTimeout(() => {
+    panel.style.display = "none";
+  }, 300);
+}
+
+function showNotification(message, type = "info") {
+  const notification = document.createElement("div");
+  const colors = {
+    success: "#4CAF50",
+    error: "#f44336", 
+    info: "#2196F3",
+    warning: "#FF9800"
+  };
+  
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${colors[type] || colors.info};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 10001;
+    opacity: 0;
+    transform: translateX(100px);
+    transition: all 0.3s ease-out;
+  `;
+  
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  requestAnimationFrame(() => {
+    notification.style.opacity = "1";
+    notification.style.transform = "translateX(0)";
+  });
+  
+  setTimeout(() => {
+    notification.style.opacity = "0";
+    notification.style.transform = "translateX(100px)";
+    setTimeout(() => document.body.removeChild(notification), 300);
+  }, 4000);
+}

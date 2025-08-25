@@ -29,5 +29,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Window visibility controls
     onWindowVisibility: (callback) => ipcRenderer.on('window-visibility', (event, status) => callback(status)),
-    requestHideWindow: () => ipcRenderer.send('request-hide-window')
+    requestHideWindow: () => ipcRenderer.send('request-hide-window'),
+
+    // Screen monitoring API
+    screenMonitor: {
+        start: () => ipcRenderer.invoke('screen-monitor:start'),
+        stop: () => ipcRenderer.invoke('screen-monitor:stop'),
+        getSolutionWalkthrough: () => ipcRenderer.invoke('screen-monitor:get-solution-walkthrough'),
+        updateProgress: (stage) => ipcRenderer.invoke('screen-monitor:update-progress', stage)
+    },
+
+    // Coding guidance callbacks
+    onCodingGuidance: (callback) => ipcRenderer.on('coding-guidance', (event, guidance) => callback(guidance)),
+    onScreenMonitoringStatus: (callback) => ipcRenderer.on('screen-monitoring-status', (event, status) => callback(status))
 });

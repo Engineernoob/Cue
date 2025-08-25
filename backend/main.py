@@ -62,14 +62,26 @@ def detect_context_type(context: str) -> str:
     """Detect the type of context for better coaching support"""
     context_lower = context.lower()
     
+    # Coding assessment platform detection
+    assessment_platforms = ['leetcode', 'hackerrank', 'codility', 'codesignal', 'hackerearth', 'geeksforgeeks']
+    if any(platform in context_lower for platform in assessment_platforms):
+        return 'coding_assessment'
+    
     # Coding interview indicators
-    coding_keywords = ['leetcode', 'algorithm', 'data structure', 'complexity', 'optimize', 
-                      'function', 'array', 'tree', 'graph', 'dynamic programming']
+    coding_keywords = ['algorithm', 'data structure', 'complexity', 'optimize', 
+                      'function', 'array', 'tree', 'graph', 'dynamic programming', 
+                      'implement', 'return', 'input', 'output', 'time limit']
     interview_keywords = ['interview', 'tell me about', 'experience', 'challenge', 'project']
     debugging_keywords = ['error', 'bug', 'debug', 'not working', 'exception', 'stack trace']
     
+    # Specific algorithm patterns
+    algorithm_patterns = ['two pointers', 'sliding window', 'binary search', 'merge sort',
+                         'breadth first', 'depth first', 'backtracking', 'greedy']
+    
     if any(keyword in context_lower for keyword in debugging_keywords):
         return 'debugging'
+    elif any(pattern in context_lower for pattern in algorithm_patterns):
+        return 'algorithm_pattern'
     elif any(keyword in context_lower for keyword in coding_keywords):
         return 'coding'
     elif any(keyword in context_lower for keyword in interview_keywords):
@@ -91,6 +103,26 @@ You help with coding interviews, assignments, and learning by providing:
 Be supportive, patient, and focus on building understanding rather than just giving answers."""
 
     context_instructions = {
+        'coding_assessment': """
+CODING ASSESSMENT PLATFORM DETECTED:
+You're helping someone on a coding assessment site. This is high-stress situation requiring:
+- CLEAR step-by-step problem breakdown
+- Algorithm pattern recognition and hints
+- Anxiety-reducing encouragement
+- Time management awareness
+- Focus on understanding over speed
+- Specific templates and starting points
+
+Remember: You're providing accessibility support, not cheating. Help them think through the problem.
+""",
+        'algorithm_pattern': """
+ALGORITHM PATTERN DETECTED:
+- Identify the specific pattern (two pointers, sliding window, etc.)
+- Provide template code structure
+- Explain the intuition behind the pattern
+- Suggest how to adapt it to this specific problem
+- Give complexity analysis hints
+""",
         'coding': """
 CODING CONTEXT DETECTED:
 - Break down complex problems into smaller steps
@@ -304,16 +336,94 @@ async def handle_image_data(websocket: WebSocket, message: Dict[str, Any]):
 
         if extracted_text.strip():
             add_to_context("screen", extracted_text)
-            await websocket.send_json({
-                "type": "ocr_result",
-                "text": extracted_text,
-                "timestamp": time.time()
-            })
+            
+            # Check if this looks like a coding problem and analyze it
+            if is_coding_problem(extracted_text):
+                analysis = analyze_coding_problem(extracted_text)
+                await websocket.send_json({
+                    "type": "coding_problem_detected",
+                    "text": extracted_text,
+                    "analysis": analysis,
+                    "timestamp": time.time()
+                })
+            else:
+                await websocket.send_json({
+                    "type": "ocr_result",
+                    "text": extracted_text,
+                    "timestamp": time.time()
+                })
+            
             logging.info(f"OCR Result: {extracted_text[:100]}...")
 
     except Exception as e:
         logging.error(f"Error processing image data for OCR: {e}", exc_info=True)
         await websocket.send_json({"type": "ocr_error", "message": str(e)})
+
+def is_coding_problem(text: str) -> bool:
+    """Detect if OCR text contains a coding problem"""
+    coding_indicators = [
+        'function', 'def ', 'class ', 'algorithm', 'implement', 'return',
+        'array', 'string', 'integer', 'list', 'tree', 'graph', 'node',
+        'time complexity', 'space complexity', 'constraint', 'example',
+        'input:', 'output:', 'leetcode', 'hackerrank', 'codility',
+        'given an array', 'given a string', 'find the', 'return the'
+    ]
+    
+    text_lower = text.lower()
+    return sum(1 for indicator in coding_indicators if indicator in text_lower) >= 3
+
+def analyze_coding_problem(text: str) -> Dict[str, Any]:
+    """Analyze a coding problem and provide insights"""
+    analysis = {
+        'patterns': [],
+        'difficulty': 'unknown',
+        'hints': [],
+        'approach_suggestions': []
+    }
+    
+    text_lower = text.lower()
+    
+    # Pattern detection
+    patterns = {
+        'two_pointers': ['two pointers', 'left right', 'palindrome', 'sorted array'],
+        'sliding_window': ['subarray', 'substring', 'window', 'consecutive'],
+        'binary_search': ['binary search', 'sorted', 'log n', 'search'],
+        'dfs_bfs': ['tree', 'graph', 'traverse', 'node', 'depth', 'breadth'],
+        'dynamic_programming': ['optimal', 'maximum', 'minimum', 'count ways', 'dp'],
+        'greedy': ['greedy', 'local optimal', 'choice'],
+        'backtracking': ['backtrack', 'permutation', 'combination', 'generate']
+    }
+    
+    for pattern, keywords in patterns.items():
+        if any(keyword in text_lower for keyword in keywords):
+            analysis['patterns'].append(pattern)
+    
+    # Difficulty estimation
+    if 'easy' in text_lower or len(text) < 300:
+        analysis['difficulty'] = 'easy'
+    elif 'hard' in text_lower or 'optimal' in text_lower or len(text) > 800:
+        analysis['difficulty'] = 'hard'
+    else:
+        analysis['difficulty'] = 'medium'
+    
+    # Generate hints based on patterns
+    if 'two_pointers' in analysis['patterns']:
+        analysis['hints'].append("Try two pointers: one from start, one from end")
+        analysis['approach_suggestions'].append("Use two pointers to scan the array efficiently")
+    
+    if 'sliding_window' in analysis['patterns']:
+        analysis['hints'].append("Consider sliding window technique for subarray problems")
+        analysis['approach_suggestions'].append("Maintain a window and slide it across the input")
+    
+    if 'dynamic_programming' in analysis['patterns']:
+        analysis['hints'].append("Break down into subproblems and find recurrence relation")
+        analysis['approach_suggestions'].append("Use memoization or tabulation for optimization")
+    
+    if not analysis['patterns']:
+        analysis['hints'].append("Start with brute force approach first")
+        analysis['approach_suggestions'].append("Understand the problem by working through examples")
+    
+    return analysis
 
 
 async def handle_llm_query(websocket: WebSocket, message: Dict[str, Any]):
