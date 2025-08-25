@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "WebSearch",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cd:*)",
+      "Bash(npm start)",
+      "Bash(python3 -m pip install:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
