@@ -146,15 +146,28 @@ function hideThinking() {
 closeThinkingBtn?.addEventListener("click", hideThinking);
 
 // --- Response Display ---
-function showResponse(content, status = "Cue’s answer:") {
+function showResponse(content, status = "Cue's answer:") {
   if (responseText) responseText.textContent = content;
   if (responseStatus) responseStatus.textContent = status;
-  if (responseBox) responseBox.hidden = false;
+  if (responseBox) {
+    responseBox.classList.remove("smooth-disappear");
+    responseBox.classList.add("smooth-appear");
+    responseBox.hidden = false;
+  }
 }
 
-closeBtn?.addEventListener("click", () => {
-  if (responseBox) responseBox.hidden = true;
-});
+function hideResponse() {
+  if (responseBox) {
+    responseBox.classList.remove("smooth-appear");
+    responseBox.classList.add("smooth-disappear");
+    setTimeout(() => {
+      responseBox.hidden = true;
+      responseBox.classList.remove("smooth-disappear");
+    }, 300);
+  }
+}
+
+closeBtn?.addEventListener("click", hideResponse);
 
 copyBtn?.addEventListener("click", () => {
   navigator.clipboard.writeText(responseText.textContent.trim());
@@ -169,7 +182,7 @@ ipcRenderer?.on("show-input", () => {
 });
 
 ipcRenderer?.on("hide-response", () => {
-  responseBox.hidden = true;
+  hideResponse();
 });
 
 // Application state
@@ -180,34 +193,47 @@ let backendConnected = false;
 
 // UI Status Management
 function updateUIStatus() {
-  // Audio status
+  // Audio status with Glass-inspired effects
   const audioBtn = document.getElementById("listen-btn");
   const audioStatus = document.getElementById("audio-status");
   if (audioBtn && audioStatus) {
     audioBtn.classList.toggle("active", audioListeningActive);
     audioStatus.classList.toggle("active", audioListeningActive);
+    audioStatus.classList.toggle("breathing", audioListeningActive);
     audioBtn.querySelector("span").textContent = audioListeningActive ? "Listening..." : "Listen";
   }
   
-  // Screen monitoring status  
+  // Screen monitoring status with Glass effects
   const monitorBtn = document.getElementById("monitor-btn");
   const monitorStatus = document.getElementById("monitor-status");
   if (monitorBtn && monitorStatus) {
     monitorBtn.classList.toggle("monitoring", screenMonitoringActive);
     monitorStatus.classList.toggle("monitoring", screenMonitoringActive);
+    monitorStatus.classList.toggle("breathing", screenMonitoringActive);
     monitorBtn.querySelector("span").textContent = screenMonitoringActive ? "Monitoring..." : "Monitor";
   }
   
-  // Stealth mode status
+  // Stealth mode status with enhanced Glass effects
   const stealthBtn = document.getElementById("stealth-btn");
   const stealthStatus = document.getElementById("stealth-status");
   const stealthIndicator = document.getElementById("stealth-indicator");
   const mainUI = document.getElementById("main-ui");
   
   if (stealthBtn && stealthStatus) {
-    stealthBtn.classList.toggle("active", stealthModeActive);
+    stealthBtn.classList.toggle("stealth", stealthModeActive);
     stealthStatus.classList.toggle("active", stealthModeActive);
+    stealthStatus.classList.toggle("breathing", stealthModeActive);
     stealthBtn.querySelector("span").textContent = stealthModeActive ? "Stealth ON" : "Stealth";
+    
+    // Glass-inspired auto-hide effect
+    if (mainUI) {
+      mainUI.classList.toggle("auto-hide", stealthModeActive);
+      if (stealthModeActive) {
+        mainUI.classList.add("invisible-to-capture");
+      } else {
+        mainUI.classList.remove("invisible-to-capture");
+      }
+    }
   }
   
   if (stealthIndicator) {

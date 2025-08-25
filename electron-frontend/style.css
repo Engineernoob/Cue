@@ -3,12 +3,14 @@ body {
   margin: 0;
   padding: 0;
   background: transparent;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Display", sans-serif;
   height: 100%;
   width: 100%;
   overflow: hidden;
   user-select: none;
   color: white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ───── Glass Floating Bar ───── */
@@ -16,36 +18,61 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 72px;
-  padding: 12px 28px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  height: 52px;
+  padding: 8px 24px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.1) inset;
   -webkit-app-region: drag;
   position: absolute;
-  top: 16px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.95;
+}
+
+.glass-bar:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.1) inset;
 }
 
 .glass-btn {
   background: transparent;
   color: white;
-  font-size: 15px;
-  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-app-region: no-drag;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 48px;
+  opacity: 0.8;
 }
 
 .glass-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .glass-btn:focus {
@@ -54,20 +81,43 @@ body {
 }
 
 .glass-btn.active {
-  background: rgba(76, 175, 80, 0.3);
-  border: 1px solid rgba(76, 175, 80, 0.5);
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+  background: rgba(76, 175, 80, 0.2);
+  border: 0.5px solid rgba(76, 175, 80, 0.4);
+  box-shadow: 
+    0 0 12px rgba(76, 175, 80, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 1;
 }
 
 .glass-btn.monitoring {
-  background: rgba(33, 150, 243, 0.3);
-  border: 1px solid rgba(33, 150, 243, 0.5);
+  background: rgba(33, 150, 243, 0.2);
+  border: 0.5px solid rgba(33, 150, 243, 0.4);
+  box-shadow: 
+    0 0 12px rgba(33, 150, 243, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
+  opacity: 1;
+}
+
+.glass-btn.stealth {
+  background: rgba(156, 39, 176, 0.2);
+  border: 0.5px solid rgba(156, 39, 176, 0.4);
+  box-shadow: 
+    0 0 12px rgba(156, 39, 176, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 1;
 }
 
 .glass-btn.disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
+  transform: none;
+}
+
+.glass-btn.disabled:hover {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
 }
 
 /* AI Status Indicator */
@@ -371,59 +421,189 @@ body {
 /* ───── Response Box ───── */
 #response-box {
   position: absolute;
-  top: 160px;
+  top: 80px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(40, 40, 40, 0.92);
-  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 16px;
   color: white;
-  padding: 18px 24px;
-  max-width: 480px;
-  width: 90%;
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);
+  padding: 16px 20px;
+  max-width: 420px;
+  width: 85%;
+  box-shadow: 
+    0 8px 40px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
   z-index: 950;
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  z-index: 950;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.96;
+}
+
+#response-box:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.response-header {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transition: all 0.25s ease;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 #response-status {
-  font-weight: 600;
-  font-size: 14px;
-  color: #a3a3a3;
+  font-weight: 500;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 #response-content {
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .response-controls {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
 .response-controls button {
-  padding: 6px 14px;
+  padding: 4px 8px;
   border: none;
-  border-radius: 10px;
-  font-size: 13px;
+  border-radius: 8px;
+  font-size: 11px;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  transition: background 0.2s ease;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .response-controls button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
-/* ───── Animations ───── */
+/* ───── Glass Invisibility Features ───── */
+.ultra-minimal {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.ultra-minimal:hover {
+  opacity: 1;
+}
+
+/* Auto-hide when inactive */
+.glass-bar.auto-hide {
+  opacity: 0.4;
+  transform: translateX(-50%) scale(0.95);
+}
+
+.glass-bar.auto-hide:hover {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* Truly invisible mode for screenshots/recordings */
+.invisible-to-capture {
+  mix-blend-mode: difference;
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* ───── Advanced Glass Effects ───── */
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+/* Liquid glass effect */
+@keyframes liquid-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.liquid-glass {
+  background: linear-gradient(-45deg, 
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  background-size: 400% 400%;
+  animation: liquid-flow 10s ease-in-out infinite;
+}
+
+/* Breathing animation for status indicators */
+@keyframes breathe {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 0.8; 
+  }
+  50% { 
+    transform: scale(1.1); 
+    opacity: 1; 
+  }
+}
+
+.ai-status-dot.breathing {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* ───── Smooth Transitions ───── */
+.smooth-appear {
+  animation: smooth-appear 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-disappear {
+  animation: smooth-disappear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes smooth-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes smooth-disappear {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    filter: blur(5px);
+  }
+}
+
+/* ───── Original Animations ───── */
 @keyframes fadeInOut {
   0%   { opacity: 0; }
   10%  { opacity: 1; }

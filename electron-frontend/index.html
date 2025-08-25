@@ -6,16 +6,16 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- 🔹 Floating Glass Bar -->
-    <div class="glass-bar" id="main-ui">
+    <!-- 🔹 Glass-Inspired Floating Bar -->
+    <div class="glass-bar ultra-minimal liquid-glass" id="main-ui">
       <button class="glass-btn" id="listen-btn" title="Start/Stop Audio Listening">
         <span>Listen</span>
-        <div class="ai-status-dot" id="audio-status"></div>
+        <div class="ai-status-dot breathing" id="audio-status"></div>
         <div class="keyboard-hint">Space</div>
       </button>
       <button class="glass-btn" id="monitor-btn" title="Toggle AI Screen Monitoring">
         <span>Monitor</span>
-        <div class="ai-status-dot" id="monitor-status"></div>
+        <div class="ai-status-dot breathing" id="monitor-status"></div>
         <div class="keyboard-hint">Ctrl+Shift+M</div>
       </button>
       <button class="glass-btn" id="ask-btn" title="Ask AI a Question">
@@ -24,7 +24,7 @@
       </button>
       <button class="glass-btn" id="stealth-btn" title="Toggle Stealth Mode (Invisible)">
         <span>Stealth</span>
-        <div class="ai-status-dot" id="stealth-status"></div>
+        <div class="ai-status-dot breathing" id="stealth-status"></div>
         <div class="keyboard-hint">Ctrl+Shift+S</div>
       </button>
     </div>
@@ -43,8 +43,8 @@
       <button id="chat-send-btn" title="Send">↩</button>
     </div>
 
-    <!-- 🔹 Response Box -->
-    <div id="response-box" class="response-box" hidden>
+    <!-- 🔹 Glass-Inspired Response Box -->
+    <div id="response-box" class="response-box glass-morphism smooth-appear" hidden>
       <div class="response-header">
         <span id="response-status">Cue's Answer:</span>
         <div class="response-controls">

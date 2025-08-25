@@ -44,11 +44,14 @@ function createWindow() {
     hasShadow: false,
     show: true,
     opacity: uiConfig.opacity,
+    vibrancy: process.platform === 'darwin' ? 'ultra-dark' : undefined,
+    backgroundMaterial: process.platform === 'win32' ? 'acrylic' : undefined,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
       backgroundThrottling: false,
+      experimentalFeatures: true,
     },
   });
 
