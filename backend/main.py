@@ -507,4 +507,4 @@ if __name__ == "__main__":
     import uvicorn
     logging.info(f"Starting FastAPI backend. Ollama Host: {OLLAMA_HOST}, Model: {OLLAMA_MODEL}")
     logging.info(f"Whisper Model: {WHISPER_MODEL_SIZE}, Device: {WHISPER_DEVICE}, Compute Type: {WHISPER_COMPUTE_TYPE}")
-    uvicorn.run(app, host="127.0.0.1", port=8000, ws="websockets")
+    uvicorn.run(app, host="127.0.0.1", port=8001, ws="websockets")

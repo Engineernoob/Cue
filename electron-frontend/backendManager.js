@@ -234,7 +234,7 @@ class BackendManager {
   // Health check the backend
   async healthCheck() {
     try {
-      const response = await fetch('http://127.0.0.1:8000/health');
+      const response = await fetch('http://127.0.0.1:8001/health');  // Changed from 8000 to 8001
       const data = await response.json();
       return data.status === 'ok';
     } catch (error) {

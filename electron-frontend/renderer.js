@@ -1,5 +1,5 @@
 // --- WebSocket Setup ---
-const socket = new WebSocket("ws://localhost:8000/ws");
+const socket = new WebSocket("ws://localhost:8001/ws");  // Changed from 8000 to 8001
 
 socket.onopen = () => {
   console.log("✅ Connected to backend");

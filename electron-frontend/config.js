@@ -4,7 +4,7 @@ const Store = require('electron-store');
 const configStore = new Store({
   defaults: {
     backend: {
-      wsUrl: 'ws://127.0.0.1:8000/ws',
+      wsUrl: 'ws://127.0.0.1:8001/ws',  // Changed from 8000 to 8001
       reconnectDelay: 5000,
       maxReconnectAttempts: 10
     },
