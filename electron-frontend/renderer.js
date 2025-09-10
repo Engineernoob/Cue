@@ -92,38 +92,87 @@ function sendChatMessage() {
   );
 }
 
-// --- Audio Capture Logic ---
+// --- Audio Capture Logic (Float32 PCM for Whisper) ---
+let audioContext = null;
+let mediaStream = null;
+let scriptNode = null;
+
+function float32ToBase64(float32Array) {
+  const buffer = new ArrayBuffer(float32Array.length * 4);
+  const view = new DataView(buffer);
+  for (let i = 0; i < float32Array.length; i++) {
+    view.setFloat32(i * 4, float32Array[i], true); // little-endian
+  }
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function resampleTo16kHz(input, inputSampleRate) {
+  const targetRate = 16000;
+  if (inputSampleRate === targetRate) return input;
+  const ratio = inputSampleRate / targetRate;
+  const newLength = Math.round(input.length / ratio);
+  const output = new Float32Array(newLength);
+  let pos = 0;
+  for (let i = 0; i < newLength; i++) {
+    const idx = i * ratio;
+    const idx1 = Math.floor(idx);
+    const idx2 = Math.min(idx1 + 1, input.length - 1);
+    const frac = idx - idx1;
+    // linear interpolation
+    output[i] = input[idx1] * (1 - frac) + input[idx2] * frac;
+  }
+  return output;
+}
+
 async function startAudioCapture() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(mediaStream);
 
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64data = reader.result.split(",")[1];
-          socket.send(
-            JSON.stringify({
-              type: "audio_chunk",
-              data: base64data,
-            })
-          );
-        };
-        reader.readAsDataURL(event.data);
-      }
+    // Use small buffer for lower latency
+    const bufferSize = 4096; // ~93ms @ 44.1kHz
+    scriptNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
+    scriptNode.onaudioprocess = (e) => {
+      if (socket.readyState !== WebSocket.OPEN) return;
+      const input = e.inputBuffer.getChannelData(0);
+      const pcm16k = resampleTo16kHz(input, audioContext.sampleRate);
+      const b64 = float32ToBase64(pcm16k);
+      socket.send(
+        JSON.stringify({
+          type: "audio_chunk",
+          data: b64,
+        })
+      );
     };
 
-    mediaRecorder.start(500); // Longer intervals for better performance
+    source.connect(scriptNode);
+    scriptNode.connect(audioContext.destination);
   } catch (err) {
     console.error("Microphone error:", err);
   }
 }
 
 function stopAudioCapture() {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") {
-    mediaRecorder.stop();
-    mediaRecorder = null;
+  try {
+    if (scriptNode) {
+      scriptNode.disconnect();
+      scriptNode.onaudioprocess = null;
+      scriptNode = null;
+    }
+    if (audioContext) {
+      audioContext.close();
+      audioContext = null;
+    }
+    if (mediaStream) {
+      for (const track of mediaStream.getTracks()) track.stop();
+      mediaStream = null;
+    }
+  } catch (e) {
+    // no-op
   }
 }
 
