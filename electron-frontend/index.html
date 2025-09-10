@@ -28,7 +28,7 @@
       </button>
       <button class="glass-btn" id="ask-btn" title="Ask AI a Question">
         <span>Ask</span>
-        <div class="keyboard-hint">Ctrl+\\</div>
+        <div class="keyboard-hint">Ctrl+\</div>
       </button>
       <button
         class="glass-btn"
@@ -44,50 +44,22 @@
     <!-- 🥷 Stealth Mode Indicator -->
     <div class="stealth-status hidden" id="stealth-indicator"></div>
 
-    <!-- 🔹 Input Prompt Box -->
-    <div id="input-bar" class="input-bar" hidden>
-      <input
-        type="text"
-        id="chat-input-box"
-        placeholder="Ask about your screen or audio..."
-        autocomplete="off"
-      />
-      <button id="chat-send-btn" title="Send">↩</button>
-    </div>
-
-    <!-- 🔹 Glass-Inspired Response Box -->
-    <div
-      id="response-box"
-      class="response-box glass-morphism smooth-appear"
-      hidden
-    >
-      <div class="response-header">
-        <span id="response-status">Cue's Answer:</span>
+    <!-- 🔹 Unified Chat UI -->
+    <div id="chat-ui" class="chat-ui" hidden>
+      <div class="chat-header">
+        <span>Cue Assistant</span>
         <div class="response-controls">
-          <button id="copy-btn" title="Copy Response">📋</button>
-          <button id="close-btn" title="Close Response">×</button>
+          <button id="copy-btn" title="Copy Transcript">📋</button>
+          <button id="close-btn" title="Close">×</button>
         </div>
       </div>
-      <div id="response-content" class="response-content">...</div>
-    </div>
-
-    <!-- 🔹 Thinking Bar -->
-    <div id="thinking-bar" class="thinking-bar" hidden>
-      <span id="thinking-text"></span>
-      <button class="close-icon">×</button>
-    </div>
-
-    <!-- 🔹 Coaching Prompt Box -->
-    <div id="prompt-box" class="coaching-box" hidden>
-      <!-- dynamically populated -->
-    </div>
-
-    <!-- 🔹 Persistent Chat UI -->
-    <div class="chat-ui" id="chat-ui" hidden>
-      <div class="chat-header">Cue Assistant</div>
-      <div class="chat-messages" id="chat-messages"></div>
+      <div id="chat-messages" class="chat-messages"></div>
       <div class="chat-input">
-        <input id="chat-ui-input" type="text" placeholder="Type a message..." />
+        <input
+          id="chat-ui-input"
+          placeholder="Type a message..."
+          autocomplete="off"
+        />
         <button id="chat-ui-send">Send</button>
       </div>
     </div>

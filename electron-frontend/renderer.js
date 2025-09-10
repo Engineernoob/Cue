@@ -10,7 +10,8 @@ function setupSocket() {
     backendConnected = true;
     updateUIStatus();
     showNotification("AI backend connected", "success");
-    reconnectAttempts = 0; // reset backoff
+    reconnectAttempts = 0;
+    appendMessage("system", "✅ Connected to backend");
   };
 
   socket.onmessage = (event) => {
@@ -19,25 +20,24 @@ function setupSocket() {
 
     switch (message.type) {
       case "llm_response_chunk":
-        responseText.textContent += message.text_chunk || "";
+        appendMessage("ai", message.text_chunk || "");
         break;
       case "llm_response_complete":
         hideThinking();
         break;
       case "live_summary":
-        const el = document.getElementById("summary-text");
-        if (el) el.textContent = message.text;
+        appendMessage("system", `📊 Summary: ${message.text}`);
         break;
       case "ocr_result":
       case "transcript":
-        inputBox.value = message.text;
+        appendMessage("system", `📝 ${message.text}`);
         if (message.type === "transcript") {
           scheduleAutoCoach(message.text);
         }
         break;
       case "error":
         hideThinking();
-        showResponse("Sorry, something went wrong.", "Error");
+        appendMessage("system", "❌ Sorry, something went wrong.");
         break;
       default:
         console.warn("Unhandled message type:", message);
@@ -49,6 +49,7 @@ function setupSocket() {
     backendConnected = false;
     updateUIStatus();
     showNotification("Backend disconnected - retrying...", "warning");
+    appendMessage("system", "🔌 Disconnected — retrying…");
 
     // Reconnect with exponential backoff
     const delay = Math.min(10000, 1000 * Math.pow(2, reconnectAttempts));
@@ -70,38 +71,35 @@ const inputBar = document.getElementById("input-bar");
 const inputBox = document.getElementById("chat-input-box");
 const sendBtn = document.getElementById("chat-send-btn");
 
-const responseBox = document.getElementById("response-box");
-const responseText = document.getElementById("response-content");
-const responseStatus = document.getElementById("response-status");
-const copyBtn = document.getElementById("copy-btn");
-const closeBtn = document.getElementById("close-btn");
-
 const thinkingBar = document.getElementById("thinking-bar");
 const thinkingText = document.getElementById("thinking-text");
 const closeThinkingBtn = document.querySelector(".close-icon");
 
-const promptBox = document.getElementById("prompt-box");
+// Unified Chat UI
+const chatUI = document.getElementById("chat-ui");
+const chatMessages = document.getElementById("chat-messages");
+const chatInput = document.getElementById("chat-ui-input");
+const chatSend = document.getElementById("chat-ui-send");
+const closeBtn = document.getElementById("close-btn");
+const copyBtn = document.getElementById("copy-btn");
 
-// --- Audio Session Handling ---
-let mediaRecorder = null;
-
-// --- Ask Button: Show Input Bar ---
+// --- Ask Button: Toggle Chat UI ---
 document.getElementById("ask-btn")?.addEventListener("click", () => {
-  inputBar.hidden = !inputBar.hidden;
-  if (!inputBar.hidden) inputBox.focus();
+  chatUI.hidden = !chatUI.hidden;
+  if (!chatUI.hidden) chatInput.focus();
 });
 
 // --- Toggle Keyboard Shortcut (⌘ or Ctrl + \) ---
 document.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
-    inputBar.hidden = !inputBar.hidden;
-    if (!inputBar.hidden) inputBox.focus();
+    chatUI.hidden = !chatUI.hidden;
+    if (!chatUI.hidden) chatInput.focus();
   }
 });
 
 // --- Chat Input Handlers ---
-sendBtn?.addEventListener("click", sendChatMessage);
-inputBox?.addEventListener("keydown", (e) => {
+chatSend?.addEventListener("click", sendChatMessage);
+chatInput?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendChatMessage();
@@ -109,12 +107,12 @@ inputBox?.addEventListener("keydown", (e) => {
 });
 
 function sendChatMessage() {
-  const text = inputBox.value.trim();
+  const text = chatInput.value.trim();
   if (!text || socket.readyState !== WebSocket.OPEN) return;
 
-  inputBox.value = "";
+  chatInput.value = "";
   showThinking(text);
-  showResponse("Thinking…");
+  appendMessage("user", text);
 
   socket.send(
     JSON.stringify({
@@ -125,15 +123,24 @@ function sendChatMessage() {
   );
 }
 
+function appendMessage(sender, text) {
+  const msg = document.createElement("div");
+  msg.className =
+    "message " +
+    (sender === "user" ? "user" : sender === "ai" ? "ai" : "system");
+  msg.textContent = text;
+  chatMessages.appendChild(msg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 // --- Audio Capture Logic (Float32 PCM for Whisper) ---
 let audioContext = null;
 let mediaStream = null;
 let scriptNode = null;
 let silentGain = null;
 
-// Adaptive silence detection state
-let noiseFloor = 0.005; // baseline noise level
-let smoothing = 0.95; // how slowly the noise floor updates
+let noiseFloor = 0.005;
+let smoothing = 0.95;
 
 function float32ToBase64(float32Array) {
   const buffer = new ArrayBuffer(float32Array.length * 4);
@@ -171,11 +178,7 @@ function isSilentAdaptive(float32Array, multiplier = 3.0) {
     sum += Math.abs(float32Array[i]);
   }
   const avg = sum / float32Array.length;
-
-  // Update running noise floor
   noiseFloor = smoothing * noiseFloor + (1 - smoothing) * avg;
-
-  // Treat as silence if not significantly above noise floor
   return avg < noiseFloor * multiplier;
 }
 
@@ -192,23 +195,16 @@ async function startAudioCapture() {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioContext.createMediaStreamSource(mediaStream);
 
-    const bufferSize = 4096; // ~93ms @ 44.1kHz
+    const bufferSize = 4096;
     scriptNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
     scriptNode.onaudioprocess = (e) => {
       if (socket.readyState !== WebSocket.OPEN) return;
       const input = e.inputBuffer.getChannelData(0);
-
-      // 🚦 Skip silence before resampling
       if (isSilentAdaptive(input)) return;
 
       const pcm16k = resampleTo16kHz(input, audioContext.sampleRate);
       const b64 = float32ToBase64(pcm16k);
-      socket.send(
-        JSON.stringify({
-          type: "audio_chunk",
-          data: b64,
-        })
-      );
+      socket.send(JSON.stringify({ type: "audio_chunk", data: b64 }));
     };
 
     source.connect(scriptNode);
@@ -260,50 +256,34 @@ function hideThinking() {
     setTimeout(() => (thinkingBar.hidden = true), 600);
   }
 }
-
 closeThinkingBtn?.addEventListener("click", hideThinking);
 
-// --- Response Display ---
-function showResponse(content, status = "Cue's answer:") {
-  if (responseText) responseText.textContent = content;
-  if (responseStatus) responseStatus.textContent = status;
-  if (responseBox) {
-    responseBox.classList.remove("smooth-disappear");
-    responseBox.classList.add("smooth-appear");
-    responseBox.hidden = false;
-  }
-}
-
-function hideResponse() {
-  if (responseBox) {
-    responseBox.classList.remove("smooth-appear");
-    responseBox.classList.add("smooth-disappear");
-    setTimeout(() => {
-      responseBox.hidden = true;
-      responseBox.classList.remove("smooth-disappear");
-    }, 300);
-  }
-}
-
-closeBtn?.addEventListener("click", hideResponse);
-
+// --- Close & Copy ---
+closeBtn?.addEventListener("click", () => (chatUI.hidden = true));
 copyBtn?.addEventListener("click", () => {
-  navigator.clipboard.writeText(responseText.textContent.trim());
+  const transcript = [...chatMessages.children]
+    .map((el) => el.textContent)
+    .join("\n");
+  navigator.clipboard.writeText(transcript);
 });
 
 // --- IPC Renderer Integration ---
 const { ipcRenderer } = window.Electron || {};
 
 ipcRenderer?.on("show-input", () => {
-  inputBar.hidden = false;
-  inputBox.focus();
+  chatUI.hidden = false;
+  chatInput.focus();
 });
-
 ipcRenderer?.on("hide-response", () => {
-  hideResponse();
+  chatUI.hidden = true;
 });
 
-// ----- Auto-Coach Logic -----
+// --- Auto-Coach Logic (kept as-is) ---
+let autoCoachActive = false;
+let lastAutoCoachAt = 0;
+let autoCoachTimer = null;
+let lastTranscriptSnippet = "";
+
 function scheduleAutoCoach(text) {
   if (!autoCoachActive) return;
   lastTranscriptSnippet = text || "";
@@ -313,7 +293,7 @@ function scheduleAutoCoach(text) {
 
 function tryAutoCoach(text) {
   const now = Date.now();
-  if (now - lastAutoCoachAt < 10000) return; // throttle to every 10s
+  if (now - lastAutoCoachAt < 10000) return;
   if (!isLikelyQuestion(text)) return;
   if (socket.readyState !== WebSocket.OPEN) return;
 
@@ -322,7 +302,7 @@ function tryAutoCoach(text) {
   if (!question) return;
 
   showThinking(question);
-  showResponse("Thinking…");
+  appendMessage("system", "Thinking…");
   socket.send(
     JSON.stringify({
       type: "llm_query",
@@ -367,126 +347,12 @@ function extractQuestion(text) {
   return parts.length ? parts[parts.length - 1] : "";
 }
 
-// ----- Auto-Coach Logic -----
-function scheduleAutoCoach(text) {
-  if (!autoCoachActive) return;
-  lastTranscriptSnippet = text || "";
-  if (autoCoachTimer) clearTimeout(autoCoachTimer);
-  autoCoachTimer = setTimeout(() => tryAutoCoach(lastTranscriptSnippet), 1200);
-}
-
-function tryAutoCoach(text) {
-  const now = Date.now();
-  if (now - lastAutoCoachAt < 10000) return; // throttle to every 10s
-  if (!isLikelyQuestion(text)) return;
-  if (socket.readyState !== WebSocket.OPEN) return;
-
-  lastAutoCoachAt = now;
-  const question = extractQuestion(text);
-  if (!question) return;
-
-  showThinking(question);
-  showResponse("Thinking…");
-  socket.send(
-    JSON.stringify({
-      type: "llm_query",
-      query: question,
-      trigger: "auto",
-      style: answerStyle,
-    })
-  );
-}
-
-function isLikelyQuestion(text) {
-  if (!text) return false;
-  const t = text.trim();
-  if (t.endsWith("?")) return true;
-  const lower = t.toLowerCase();
-  const qWords = [
-    "how",
-    "why",
-    "what",
-    "when",
-    "where",
-    "which",
-    "could you",
-    "can you",
-    "would you",
-    "do you",
-    "tell me",
-    "walk me",
-    "explain",
-  ];
-  return qWords.some((w) => lower.startsWith(w) || lower.includes(w + " "));
-}
-
-function extractQuestion(text) {
-  const t = (text || "").trim();
-  const qMatch = t.match(/[^?.!]*\?\s*$/);
-  if (qMatch) return qMatch[0].trim();
-  const parts = t
-    .split(/[.!]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return parts.length ? parts[parts.length - 1] : "";
-}
-
-// Initialize UI on load
-document.addEventListener("DOMContentLoaded", () => {
-  updateUIStatus();
-});
-
+// Initialize UI
+document.addEventListener("DOMContentLoaded", () => updateUIStatus());
 window.addEventListener("load", () => {
   updateUIStatus();
   checkBackendStatus();
 });
-
-// --- Full Chat UI ---
-const chatUI = document.getElementById("chat-ui");
-const chatMessages = document.getElementById("chat-messages");
-const chatUIInput = document.getElementById("chat-ui-input");
-const chatUISend = document.getElementById("chat-ui-send");
-
-// Toggle chat window when "Ask" is clicked
-document.getElementById("ask-btn")?.addEventListener("click", () => {
-  chatUI.hidden = !chatUI.hidden;
-  if (!chatUI.hidden) chatUIInput.focus();
-});
-
-// Send chat message
-chatUISend?.addEventListener("click", sendChatUIMessage);
-chatUIInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendChatUIMessage();
-  }
-});
-
-function sendChatUIMessage() {
-  const text = chatUIInput.value.trim();
-  if (!text || socket.readyState !== WebSocket.OPEN) return;
-
-  appendMessage("You", text);
-  socket.send(JSON.stringify({ type: "llm_query", query: text }));
-  chatUIInput.value = "";
-}
-
-function appendMessage(sender, text) {
-  const msg = document.createElement("div");
-  msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
-  chatMessages.appendChild(msg);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Hook into backend responses
-const originalOnMessage = socket.onmessage;
-socket.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  if (message.type === "llm_response_chunk") {
-    appendMessage("Cue", message.text_chunk || "");
-  }
-  if (originalOnMessage) originalOnMessage(event); // keep your other handlers working
-};
 
 // Backend status monitoring
 async function checkBackendStatus() {
