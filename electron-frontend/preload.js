@@ -1,70 +1,76 @@
-// electron-frontend/preload.js
+// preload.js
+const { contextBridge, ipcRenderer } = require("electron");
 
-const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld("electronAPI", {
+  // Backend
+  onBackendStatus: (callback) =>
+    ipcRenderer.on("backend-status", (_e, status) => callback(status)),
+  onBackendMessage: (callback) =>
+    ipcRenderer.on("backend-message", (_e, message) => callback(message)),
 
-contextBridge.exposeInMainWorld('electronAPI', {
-    // Backend status and messages
-    onBackendStatus: (callback) => ipcRenderer.on('backend-status', (event, status) => callback(status)),
-    onBackendMessage: (callback) => ipcRenderer.on('backend-message', (event, message) => callback(message)),
+  // Audio / Screen
+  onToggleAudioCapture: (callback) =>
+    ipcRenderer.on("toggle-audio-capture", () => callback()),
+  onToggleScreenCapture: (callback) =>
+    ipcRenderer.on("toggle-screen-capture", () => callback()),
+  onAudioStatus: (callback) =>
+    ipcRenderer.on("audio-status", (_e, status) => callback(status)),
+  onScreenStatus: (callback) =>
+    ipcRenderer.on("screen-status", (_e, status) => callback(status)),
 
-    // Audio/Screen capture controls (triggered by hotkeys from main)
-    onToggleAudioCapture: (callback) => ipcRenderer.on('toggle-audio-capture', (event) => callback()),
-    onToggleScreenCapture: (callback) => ipcRenderer.on('toggle-screen-capture', (event) => callback()),
+  // LLM
+  sendLlmQuery: (query) => ipcRenderer.send("send-llm-query", query),
+  onLlmResponseError: (callback) =>
+    ipcRenderer.on("llm-response-error", (_e, err) => callback(err)),
 
-    // Status updates from main process (e.g., if capture fails)
-    onAudioStatus: (callback) => ipcRenderer.on('audio-status', (event, status) => callback(status)),
-    onScreenStatus: (callback) => ipcRenderer.on('screen-status', (event, status) => callback(status)),
+  // Capture
+  sendAudioChunkData: (data) => ipcRenderer.send("audio-chunk-data", data),
+  sendImageChunkData: (data) => ipcRenderer.send("image-data-chunk", data),
+  getDesktopSources: (options) =>
+    ipcRenderer.invoke("get-desktop-sources", options),
 
-    // LLM interaction
-    sendLlmQuery: (query) => ipcRenderer.send('send-llm-query', query),
-    onTriggerLlmInput: (callback) => ipcRenderer.on('trigger-llm-input', (event) => callback()),
-    onLlmResponseError: (callback) => ipcRenderer.on('llm-response-error', (event, error) => callback(error)),
+  // Window
+  onWindowVisibility: (callback) =>
+    ipcRenderer.on("window-visibility", (_e, status) => callback(status)),
+  requestHideWindow: () => ipcRenderer.send("request-hide-window"),
 
-    // Methods to send captured data from renderer to main
-    sendAudioChunkData: (data) => ipcRenderer.send('audio-chunk-data', data),
-    sendImageChunkData: (data) => ipcRenderer.send('image-data-chunk', data),
+  // Push-To-Talk (renderer handles Shift+Space)
+  onPushToTalkStart: (callback) =>
+    ipcRenderer.on("ptt-start", () => callback()),
+  onPushToTalkStop: (callback) => ipcRenderer.on("ptt-stop", () => callback()),
 
-    // Expose desktopCapturer.getSources (via IPC handle)
-    getDesktopSources: (options) => ipcRenderer.invoke('get-desktop-sources', options),
+  // Auto-Coach + Answer Style
+  onAutoCoachToggle: (callback) =>
+    ipcRenderer.on("auto-coach-toggle", () => callback()),
+  onAnswerStyleCycle: (callback) =>
+    ipcRenderer.on("answer-style-cycle", () => callback()),
 
-    // Window visibility controls
-    onWindowVisibility: (callback) => ipcRenderer.on('window-visibility', (event, status) => callback(status)),
-    requestHideWindow: () => ipcRenderer.send('request-hide-window'),
+  // Screen monitor
+  screenMonitor: {
+    start: () => ipcRenderer.invoke("screen-monitor:start"),
+    stop: () => ipcRenderer.invoke("screen-monitor:stop"),
+    getSolutionWalkthrough: () =>
+      ipcRenderer.invoke("screen-monitor:get-solution-walkthrough"),
+    updateProgress: (stage) =>
+      ipcRenderer.invoke("screen-monitor:update-progress", stage),
+  },
+  onCodingGuidance: (callback) =>
+    ipcRenderer.on("coding-guidance", (_e, g) => callback(g)),
+  onScreenMonitoringStatus: (callback) =>
+    ipcRenderer.on("screen-monitoring-status", (_e, s) => callback(s)),
 
-    // Push-To-Talk events
-    onPushToTalkStart: (callback) => ipcRenderer.on('ptt-start', () => callback()),
-    onPushToTalkStop: (callback) => ipcRenderer.on('ptt-stop', () => callback()),
+  // Stealth
+  stealth: {
+    enable: () => ipcRenderer.invoke("stealth:enable"),
+    disable: () => ipcRenderer.invoke("stealth:disable"),
+    toggle: () => ipcRenderer.invoke("stealth:toggle"),
+  },
 
-    // Auto-Coach toggle
-    onAutoCoachToggle: (callback) => ipcRenderer.on('auto-coach-toggle', () => callback()),
-
-    // Answer Style cycle
-    onAnswerStyleCycle: (callback) => ipcRenderer.on('answer-style-cycle', () => callback()),
-
-    // Screen monitoring API
-    screenMonitor: {
-        start: () => ipcRenderer.invoke('screen-monitor:start'),
-        stop: () => ipcRenderer.invoke('screen-monitor:stop'),
-        getSolutionWalkthrough: () => ipcRenderer.invoke('screen-monitor:get-solution-walkthrough'),
-        updateProgress: (stage) => ipcRenderer.invoke('screen-monitor:update-progress', stage)
-    },
-
-    // Coding guidance callbacks
-    onCodingGuidance: (callback) => ipcRenderer.on('coding-guidance', (event, guidance) => callback(guidance)),
-    onScreenMonitoringStatus: (callback) => ipcRenderer.on('screen-monitoring-status', (event, status) => callback(status)),
-
-    // Stealth mode API
-    stealth: {
-        enable: () => ipcRenderer.invoke('stealth:enable'),
-        disable: () => ipcRenderer.invoke('stealth:disable'),
-        toggle: () => ipcRenderer.invoke('stealth:toggle')
-    },
-
-    // Backend management API
-    backend: {
-        getStatus: () => ipcRenderer.invoke('backend:status'),
-        restart: () => ipcRenderer.invoke('backend:restart'),
-        healthCheck: () => ipcRenderer.invoke('backend:health'),
-        stop: () => ipcRenderer.invoke('backend:stop')
-    }
+  // Backend manager
+  backend: {
+    getStatus: () => ipcRenderer.invoke("backend:status"),
+    restart: () => ipcRenderer.invoke("backend:restart"),
+    healthCheck: () => ipcRenderer.invoke("backend:health"),
+    stop: () => ipcRenderer.invoke("backend:stop"),
+  },
 });

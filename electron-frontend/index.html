@@ -8,12 +8,20 @@
   <body>
     <!-- 🔹 Glass-Inspired Floating Bar -->
     <div class="glass-bar ultra-minimal liquid-glass" id="main-ui">
-      <button class="glass-btn" id="listen-btn" title="Start/Stop Audio Listening">
+      <button
+        class="glass-btn"
+        id="listen-btn"
+        title="Start/Stop Audio Listening"
+      >
         <span>Listen</span>
         <div class="ai-status-dot breathing" id="audio-status"></div>
         <div class="keyboard-hint">Space</div>
       </button>
-      <button class="glass-btn" id="monitor-btn" title="Toggle AI Screen Monitoring">
+      <button
+        class="glass-btn"
+        id="monitor-btn"
+        title="Toggle AI Screen Monitoring"
+      >
         <span>Monitor</span>
         <div class="ai-status-dot breathing" id="monitor-status"></div>
         <div class="keyboard-hint">Ctrl+Shift+M</div>
@@ -22,14 +30,18 @@
         <span>Ask</span>
         <div class="keyboard-hint">Ctrl+\\</div>
       </button>
-      <button class="glass-btn" id="stealth-btn" title="Toggle Stealth Mode (Invisible)">
+      <button
+        class="glass-btn"
+        id="stealth-btn"
+        title="Toggle Stealth Mode (Invisible)"
+      >
         <span>Stealth</span>
         <div class="ai-status-dot breathing" id="stealth-status"></div>
         <div class="keyboard-hint">Ctrl+Shift+S</div>
       </button>
     </div>
 
-    <!-- 🥷 Stealth Mode Indicator (always visible when in stealth) -->
+    <!-- 🥷 Stealth Mode Indicator -->
     <div class="stealth-status hidden" id="stealth-indicator"></div>
 
     <!-- 🔹 Input Prompt Box -->
@@ -44,7 +56,11 @@
     </div>
 
     <!-- 🔹 Glass-Inspired Response Box -->
-    <div id="response-box" class="response-box glass-morphism smooth-appear" hidden>
+    <div
+      id="response-box"
+      class="response-box glass-morphism smooth-appear"
+      hidden
+    >
       <div class="response-header">
         <span id="response-status">Cue's Answer:</span>
         <div class="response-controls">
@@ -55,15 +71,25 @@
       <div id="response-content" class="response-content">...</div>
     </div>
 
-    <!-- 🔹 Thinking Bar (optional, can animate) -->
+    <!-- 🔹 Thinking Bar -->
     <div id="thinking-bar" class="thinking-bar" hidden>
       <span id="thinking-text"></span>
       <button class="close-icon">×</button>
     </div>
 
-    <!-- 🔹 Coaching Prompt Box (optional) -->
+    <!-- 🔹 Coaching Prompt Box -->
     <div id="prompt-box" class="coaching-box" hidden>
       <!-- dynamically populated -->
+    </div>
+
+    <!-- 🔹 Persistent Chat UI -->
+    <div class="chat-ui" id="chat-ui" hidden>
+      <div class="chat-header">Cue Assistant</div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input">
+        <input id="chat-ui-input" type="text" placeholder="Type a message..." />
+        <button id="chat-ui-send">Send</button>
+      </div>
     </div>
 
     <script src="renderer.js"></script>
