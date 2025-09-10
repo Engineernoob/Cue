@@ -15,7 +15,7 @@ const { registerCodingAssessmentHandlers } = require("./codingAssessmentHelper")
 const { createScreenMonitor } = require("./screenMonitor");
 const { createStealthManager, registerStealthHandlers } = require("./stealthMode");
 const backendManager = require("./backendManager");
-const { getConfig } = require("./config");
+const { getConfig, setConfig } = require("./config");
 
 const PYTHON_BACKEND_WS_URL = getConfig('backend.wsUrl');
 
@@ -77,6 +77,29 @@ function createWindow() {
       experimentalFeatures: true,
     },
   });
+
+  // Persist window position after user moves it
+  let savePosTimer = null;
+  const scheduleSavePos = () => {
+    if (savePosTimer) clearTimeout(savePosTimer);
+    savePosTimer = setTimeout(() => {
+      try {
+        if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return;
+        const { x, y } = mainWindow.getBounds();
+        // Ignore stealth off-screen coords
+        if (x < -5000 || y < -5000) return;
+        const current = getConfig('ui.position');
+        if (!current || current.x !== x || current.y !== y) {
+          setConfig('ui.position', { x, y });
+        }
+      } catch (e) {
+        console.error('Failed to save window position:', e);
+      }
+    }, 300);
+  };
+
+  mainWindow.on('move', scheduleSavePos);
+  mainWindow.on('moved', scheduleSavePos);
 
   if (process.platform === "darwin") {
     mainWindow.setAlwaysOnTop(true, "floating");
