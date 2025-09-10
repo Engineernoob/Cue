@@ -130,8 +130,8 @@ class BackendManager {
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          // Ensure fast, low-latency STT by default; user can override via env
-          WHISPER_MODEL_SIZE: process.env.WHISPER_MODEL_SIZE || 'tiny',
+          // Default to higher-accuracy Whisper model; override via env if needed
+          WHISPER_MODEL_SIZE: process.env.WHISPER_MODEL_SIZE || 'base',
           WHISPER_DEVICE: process.env.WHISPER_DEVICE || 'cpu',
           WHISPER_COMPUTE_TYPE: process.env.WHISPER_COMPUTE_TYPE || 'int8'
         }

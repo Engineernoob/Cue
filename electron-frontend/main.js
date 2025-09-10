@@ -25,16 +25,39 @@ let audioCapturing = false;
 
 // --- Create Minimal Floating Bar UI ---
 function createWindow() {
-  const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   const uiConfig = getConfig('ui');
   const windowWidth = 500;
   const windowHeight = 90;
 
+  // Resolve position keywords (center, bottom[-offset])
+  const posXRaw = uiConfig.position?.x ?? 'center';
+  const posYRaw = uiConfig.position?.y ?? 'bottom-40';
+
+  const resolveX = () => {
+    if (posXRaw === 'center') return Math.round((screenWidth - windowWidth) / 2);
+    if (typeof posXRaw === 'number') return posXRaw;
+    return 0;
+  };
+
+  const resolveY = () => {
+    if (typeof posYRaw === 'number') return posYRaw;
+    if (typeof posYRaw === 'string') {
+      if (posYRaw === 'center') return Math.round((screenHeight - windowHeight) / 2);
+      if (posYRaw.startsWith('bottom')) {
+        const parts = posYRaw.split('-');
+        const offset = parts.length > 1 ? Math.max(0, parseInt(parts[1], 10) || 0) : 40;
+        return Math.max(0, screenHeight - windowHeight - offset);
+      }
+    }
+    return 30; // fallback near top
+  };
+
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    x: uiConfig.position.x === 'center' ? Math.round((screenWidth - windowWidth) / 2) : uiConfig.position.x,
-    y: uiConfig.position.y,
+    x: resolveX(),
+    y: resolveY(),
     frame: false,
     transparent: true,
     alwaysOnTop: uiConfig.alwaysOnTop,
