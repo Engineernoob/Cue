@@ -65,11 +65,22 @@
       </div>
     </div>
 
-    <!-- 🔹 Thinking Bar -->
-    <div id="thinking-bar" class="thinking-bar" hidden>
-      <span id="thinking-text"></span>
-      <button class="close-icon">×</button>
+    <!-- 🔹 Typing Indicator -->
+    <div id="thinking-bar" class="thinking-bubble hidden">
+      <span id="thinking-text">Cue is typing…</span>
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </div>
+  
+    <div class="chat-input">
+      <input
+        id="chat-ui-input"
+        type="text"
+        placeholder="Ask Cue something..."
+        autocomplete="off"
+      />
+      <button id="chat-ui-send" title="Send">↩</button>
+    </div>
+  </div>
 
     <!-- 🔹 Coaching Prompt Box (optional) -->
     <div id="prompt-box" class="coaching-box" hidden></div>

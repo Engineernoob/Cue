@@ -128,20 +128,17 @@ function appendMessage(sender, text) {
 }
 
 // --- Thinking Display ---
-function showThinking(text = "") {
-  if (thinkingText) thinkingText.textContent = `“${text}”`;
-  if (thinkingBar) {
-    thinkingBar.hidden = false;
-    thinkingBar.classList.add("show");
-  }
+function showThinking(text = "Cue is typing…") {
+  const thinkingBar = document.getElementById("thinking-bar");
+  const thinkingText = document.getElementById("thinking-text");
+  if (thinkingText) thinkingText.textContent = text;
+  if (thinkingBar) thinkingBar.classList.remove("hidden");
 }
+
 function hideThinking() {
-  if (thinkingBar) {
-    thinkingBar.classList.remove("show");
-    setTimeout(() => (thinkingBar.hidden = true), 600);
-  }
+  const thinkingBar = document.getElementById("thinking-bar");
+  if (thinkingBar) thinkingBar.classList.add("hidden");
 }
-closeThinkingBtn?.addEventListener("click", hideThinking);
 
 // --- Close & Copy ---
 closeBtn?.addEventListener("click", () => (chatUI.hidden = true));
