@@ -91,6 +91,7 @@ function sendChatMessage() {
     JSON.stringify({
       type: "llm_query",
       query: text,
+      style: answerStyle,
     })
   );
 }
@@ -274,7 +275,7 @@ function tryAutoCoach(text) {
   showThinking(question);
   showResponse("Thinking…");
   socket.send(
-    JSON.stringify({ type: "llm_query", query: question, trigger: "auto" })
+    JSON.stringify({ type: "llm_query", query: question, trigger: "auto", style: answerStyle })
   );
 }
 
@@ -306,6 +307,7 @@ let audioListeningActive = false;
 let backendConnected = false;
 let pttActive = false;
 let autoCoachActive = false;
+let answerStyle = 'PAR';
 let lastAutoCoachAt = 0;
 let autoCoachTimer = null;
 let lastTranscriptSnippet = '';
@@ -446,6 +448,14 @@ document.addEventListener("keyup", (e) => {
 window.electronAPI?.onAutoCoachToggle(() => {
   autoCoachActive = !autoCoachActive;
   showNotification(`Auto-Coach ${autoCoachActive ? 'Enabled' : 'Disabled'}`, autoCoachActive ? 'success' : 'info');
+});
+
+// Cycle answer style between PAR, STAR, SCQA
+window.electronAPI?.onAnswerStyleCycle(() => {
+  const styles = ['PAR', 'STAR', 'SCQA'];
+  const idx = styles.indexOf(answerStyle);
+  answerStyle = styles[(idx + 1) % styles.length];
+  showNotification(`Answer Style: ${answerStyle}`, 'info');
 });
 
 // Toggle functions

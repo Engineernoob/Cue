@@ -88,7 +88,7 @@ def detect_context_type(context: str) -> str:
     else:
         return 'general'
 
-def build_neurodivergent_prompt(context: str, query: str, context_type: str) -> str:
+def build_neurodivergent_prompt(context: str, query: str, context_type: str, style: Optional[str] = None) -> str:
     """Build a specialized prompt for neurodivergent coding support"""
     
     base_instructions = """You are Cue, an AI assistant designed specifically to support neurodivergent developers and students. 
@@ -154,7 +154,28 @@ GENERAL CONTEXT:
 """
     }
     
-    return f"""{base_instructions}
+    style = (style or "").upper()
+    style_instructions = ""
+    if style == 'PAR':
+        style_instructions = (
+            "\nFORMAT YOUR ANSWER USING PAR:\n"
+            "- Problem: 1 short sentence\n- Action: 1 short sentence\n- Result: 1 short sentence with metric if possible.\n"
+            "Keep total under 80-120 words.\n"
+        )
+    elif style == 'STAR':
+        style_instructions = (
+            "\nFORMAT YOUR ANSWER USING STAR:\n"
+            "- Situation, Task, Action, Result (4 concise bullets).\n"
+            "Keep total under 120-150 words.\n"
+        )
+    elif style == 'SCQA':
+        style_instructions = (
+            "\nFORMAT YOUR ANSWER USING SCQA:\n"
+            "- Situation → Complication → Question → Answer (brief).\n"
+            "Keep total under 120-150 words.\n"
+        )
+
+    return f"""{base_instructions}{style_instructions}
 
 {context_instructions.get(context_type, context_instructions['general'])}
 
@@ -444,8 +465,9 @@ async def handle_llm_query(websocket: WebSocket, message: Dict[str, Any]):
 
     current_context = get_current_context()
 
-    # Enhanced prompt for neurodivergent coding support
-    prompt = build_neurodivergent_prompt(current_context, user_query, context_type)
+    # Enhanced prompt for neurodivergent coding support + interview answer style
+    answer_style = message.get("style")
+    prompt = build_neurodivergent_prompt(current_context, user_query, context_type, answer_style)
     logging.info(f"Sending LLM query to Ollama. Context length: {len(current_context)}. Query: {user_query}")
 
     try:
