@@ -28,7 +28,7 @@
       </button>
       <button class="glass-btn" id="ask-btn" title="Ask AI a Question">
         <span>Ask</span>
-        <div class="keyboard-hint">Ctrl+\</div>
+        <div class="keyboard-hint">Ctrl+\\</div>
       </button>
       <button
         class="glass-btn"
@@ -47,22 +47,32 @@
     <!-- 🔹 Unified Chat UI -->
     <div id="chat-ui" class="chat-ui" hidden>
       <div class="chat-header">
-        <span>Cue Assistant</span>
+        Cue Assistant
         <div class="response-controls">
           <button id="copy-btn" title="Copy Transcript">📋</button>
-          <button id="close-btn" title="Close">×</button>
+          <button id="close-btn" title="Close Chat">×</button>
         </div>
       </div>
       <div id="chat-messages" class="chat-messages"></div>
       <div class="chat-input">
         <input
           id="chat-ui-input"
-          placeholder="Type a message..."
+          type="text"
+          placeholder="Ask Cue something..."
           autocomplete="off"
         />
-        <button id="chat-ui-send">Send</button>
+        <button id="chat-ui-send" title="Send">↩</button>
       </div>
     </div>
+
+    <!-- 🔹 Thinking Bar -->
+    <div id="thinking-bar" class="thinking-bar" hidden>
+      <span id="thinking-text"></span>
+      <button class="close-icon">×</button>
+    </div>
+
+    <!-- 🔹 Coaching Prompt Box (optional) -->
+    <div id="prompt-box" class="coaching-box" hidden></div>
 
     <script src="renderer.js"></script>
   </body>
