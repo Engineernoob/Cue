@@ -23,6 +23,9 @@ socket.onmessage = (event) => {
     case "ocr_result":
     case "transcript":
       inputBox.value = message.text;
+      if (message.type === "transcript") {
+        scheduleAutoCoach(message.text);
+      }
       break;
     case "error":
       hideThinking();
@@ -130,7 +133,14 @@ function resampleTo16kHz(input, inputSampleRate) {
 
 async function startAudioCapture() {
   try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1
+      }
+    });
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioContext.createMediaStreamSource(mediaStream);
 
@@ -243,11 +253,62 @@ ipcRenderer?.on("hide-response", () => {
   hideResponse();
 });
 
+// ----- Auto-Coach Logic -----
+function scheduleAutoCoach(text) {
+  if (!autoCoachActive) return;
+  lastTranscriptSnippet = text || "";
+  if (autoCoachTimer) clearTimeout(autoCoachTimer);
+  autoCoachTimer = setTimeout(() => tryAutoCoach(lastTranscriptSnippet), 1200);
+}
+
+function tryAutoCoach(text) {
+  const now = Date.now();
+  if (now - lastAutoCoachAt < 10000) return; // throttle to every 10s
+  if (!isLikelyQuestion(text)) return;
+  if (socket.readyState !== WebSocket.OPEN) return;
+
+  lastAutoCoachAt = now;
+  const question = extractQuestion(text);
+  if (!question) return;
+
+  showThinking(question);
+  showResponse("Thinking…");
+  socket.send(
+    JSON.stringify({ type: "llm_query", query: question, trigger: "auto" })
+  );
+}
+
+function isLikelyQuestion(text) {
+  if (!text) return false;
+  const t = text.trim();
+  if (t.endsWith("?")) return true;
+  const lower = t.toLowerCase();
+  const qWords = [
+    "how", "why", "what", "when", "where", "which",
+    "could you", "can you", "would you", "do you",
+    "tell me", "walk me", "explain"
+  ];
+  return qWords.some((w) => lower.startsWith(w) || lower.includes(w + " "));
+}
+
+function extractQuestion(text) {
+  const t = (text || "").trim();
+  const qMatch = t.match(/[^?.!]*\?\s*$/);
+  if (qMatch) return qMatch[0].trim();
+  const parts = t.split(/[.!]/).map((s) => s.trim()).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : "";
+}
+
 // Application state
 let screenMonitoringActive = false;
 let stealthModeActive = false;
 let audioListeningActive = false;
 let backendConnected = false;
+let pttActive = false;
+let autoCoachActive = false;
+let lastAutoCoachAt = 0;
+let autoCoachTimer = null;
+let lastTranscriptSnippet = '';
 
 // UI Status Management
 function updateUIStatus() {
@@ -255,10 +316,11 @@ function updateUIStatus() {
   const audioBtn = document.getElementById("listen-btn");
   const audioStatus = document.getElementById("audio-status");
   if (audioBtn && audioStatus) {
-    audioBtn.classList.toggle("active", audioListeningActive);
-    audioStatus.classList.toggle("active", audioListeningActive);
-    audioStatus.classList.toggle("breathing", audioListeningActive);
-    audioBtn.querySelector("span").textContent = audioListeningActive
+    const active = audioListeningActive || pttActive;
+    audioBtn.classList.toggle("active", active);
+    audioStatus.classList.toggle("active", active);
+    audioStatus.classList.toggle("breathing", active);
+    audioBtn.querySelector("span").textContent = active
       ? "Listening..."
       : "Listen";
   }
@@ -348,11 +410,42 @@ document.addEventListener("keydown", (e) => {
     if (!inputBar.hidden) inputBox.focus();
   }
 
-  // Space to toggle audio (when not typing)
-  if (e.code === "Space" && !e.target.matches("input, textarea")) {
+  // Space to toggle audio (when not typing). Skip if Shift is held (reserved for PTT).
+  if (e.code === "Space" && !e.shiftKey && !e.target.matches("input, textarea")) {
     e.preventDefault();
     toggleAudioListening();
   }
+});
+
+// In-window Push-To-Talk: hold Shift+Space to record, release to stop
+document.addEventListener("keydown", async (e) => {
+  if (e.code === "Space" && e.shiftKey && !e.repeat) {
+    e.preventDefault();
+    if (!pttActive) {
+      pttActive = true;
+      await startAudioCapture();
+      updateUIStatus();
+      showNotification("Push-to-Talk: recording", "success");
+    }
+  }
+});
+
+document.addEventListener("keyup", (e) => {
+  if (e.code === "Space" && e.shiftKey) {
+    e.preventDefault();
+    if (pttActive) {
+      pttActive = false;
+      stopAudioCapture();
+      updateUIStatus();
+      showNotification("Push-to-Talk: stopped", "info");
+    }
+  }
+});
+
+// Auto-Coach toggle via global shortcut
+window.electronAPI?.onAutoCoachToggle(() => {
+  autoCoachActive = !autoCoachActive;
+  showNotification(`Auto-Coach ${autoCoachActive ? 'Enabled' : 'Disabled'}`, autoCoachActive ? 'success' : 'info');
 });
 
 // Toggle functions
@@ -438,6 +531,23 @@ ipcRenderer?.on("send-screen-for-analysis", (event, data) => {
   if (data && data.imageData) {
     ipcRenderer?.send("image-data-chunk", data.imageData);
   }
+});
+
+// Push-To-Talk IPC handlers
+window.electronAPI?.onPushToTalkStart(async () => {
+  if (pttActive) return;
+  pttActive = true;
+  await startAudioCapture();
+  updateUIStatus();
+  showNotification("Push-to-Talk: recording", "success");
+});
+
+window.electronAPI?.onPushToTalkStop(() => {
+  if (!pttActive) return;
+  pttActive = false;
+  stopAudioCapture();
+  updateUIStatus();
+  showNotification("Push-to-Talk: stopped", "info");
 });
 
 function showCodingGuidance(guidance) {

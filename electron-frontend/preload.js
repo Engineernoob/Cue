@@ -31,6 +31,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onWindowVisibility: (callback) => ipcRenderer.on('window-visibility', (event, status) => callback(status)),
     requestHideWindow: () => ipcRenderer.send('request-hide-window'),
 
+    // Push-To-Talk events
+    onPushToTalkStart: (callback) => ipcRenderer.on('ptt-start', () => callback()),
+    onPushToTalkStop: (callback) => ipcRenderer.on('ptt-stop', () => callback()),
+
+    // Auto-Coach toggle
+    onAutoCoachToggle: (callback) => ipcRenderer.on('auto-coach-toggle', () => callback()),
+
+    // Answer Style cycle
+    onAnswerStyleCycle: (callback) => ipcRenderer.on('answer-style-cycle', () => callback()),
+
     // Screen monitoring API
     screenMonitor: {
         start: () => ipcRenderer.invoke('screen-monitor:start'),

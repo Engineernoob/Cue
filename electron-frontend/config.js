@@ -46,7 +46,16 @@ const configStore = new Store({
       codingMode: true,
       interviewMode: true,
       debuggingHelp: true,
-      algorithmHints: true
+      algorithmHints: true,
+      answerStyle: 'PAR' // Preferred answer structure: PAR, STAR, or SCQA
+    },
+    hotkeys: {
+      pushToTalk: {
+        start: 'CommandOrControl+Shift+Space',
+        stop: 'CommandOrControl+Shift+K'
+      },
+      autoCoachToggle: 'CommandOrControl+Shift+A',
+      answerStyleCycle: 'CommandOrControl+Shift+R'
     }
   }
 });

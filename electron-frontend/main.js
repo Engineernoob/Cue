@@ -109,6 +109,9 @@ app.whenReady().then(async () => {
   registerBackendHandlers();
   const stealthHotkeys = registerStealthHandlers(stealthManager);
   registerGlobalShortcuts(stealthHotkeys);
+  registerPushToTalkShortcuts();
+  registerAutoCoachShortcut();
+  registerAnswerStyleShortcut();
   
   // Start health monitoring
   backendManager.startHealthMonitoring();
@@ -322,6 +325,57 @@ function registerGlobalShortcuts(stealthHotkeys) {
 
   } catch (error) {
     console.error('Failed to register global shortcuts:', error);
+  }
+}
+
+// --- Push-To-Talk Global Shortcuts ---
+function registerPushToTalkShortcuts() {
+  const { globalShortcut } = require('electron');
+  const pttConfig = getConfig('hotkeys.pushToTalk');
+
+  try {
+    // Start recording while holding a dedicated key combo
+    globalShortcut.register(pttConfig.start, () => {
+      console.log('Global shortcut: PTT start');
+      mainWindow?.webContents.send('ptt-start');
+    });
+
+    // Stop recording when pressing stop combo (limitation: keyup not available globally)
+    globalShortcut.register(pttConfig.stop, () => {
+      console.log('Global shortcut: PTT stop');
+      mainWindow?.webContents.send('ptt-stop');
+    });
+
+  } catch (error) {
+    console.error('Failed to register push-to-talk shortcuts:', error);
+  }
+}
+
+// --- Auto-Coach Toggle (global) ---
+function registerAutoCoachShortcut() {
+  const { globalShortcut } = require('electron');
+  const hotkey = getConfig('hotkeys.autoCoachToggle');
+  try {
+    globalShortcut.register(hotkey, () => {
+      console.log('Global shortcut: Auto-Coach toggle');
+      mainWindow?.webContents.send('auto-coach-toggle');
+    });
+  } catch (error) {
+    console.error('Failed to register auto-coach shortcut:', error);
+  }
+}
+
+// --- Answer Style Cycle (global) ---
+function registerAnswerStyleShortcut() {
+  const { globalShortcut } = require('electron');
+  const hotkey = getConfig('hotkeys.answerStyleCycle');
+  try {
+    globalShortcut.register(hotkey, () => {
+      console.log('Global shortcut: Answer Style cycle');
+      mainWindow?.webContents.send('answer-style-cycle');
+    });
+  } catch (error) {
+    console.error('Failed to register answer style shortcut:', error);
   }
 }
 
