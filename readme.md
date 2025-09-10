@@ -66,15 +66,21 @@ Discreet Visual/Haptic Prompts
 # Clone
 git clone https://github.com/your-username/cue.git && cd cue
 
-# Electron frontend
+# One‑command run (Electron auto‑starts the Python backend)
 cd electron-frontend
-npm install && npm start
+npm install
+npm start
 
-# Python backend
-cd ../python-backend
-python -m venv venv && source venv/bin/activate
+# Optional: run backend manually (for debugging)
+cd ../backend
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python server.py
+python main.py
+
+# LLM (Ollama): ensure a local model is available
+ollama serve &     # keep server running
+ollama run gemma3:1b   # first run pulls the model
+```
 
 🔐 Privacy & Trust
 
@@ -97,6 +103,18 @@ Phase 3
 Learning user styles, calendar integration, plugin store
 
 ```
+
+---
+
+## 🎤 Interview Mode Checklist
+
+- Start app: `cd electron-frontend && npm start` (wait for “Connected”).
+- Microphone: grant permission to “Electron” in System Settings → Privacy → Microphone.
+- Real‑time STT: press Space or click “Listen” to toggle. Transcripts update live.
+- Ask AI: Cmd+\ to open input → type → Enter; responses stream in.
+- Stealth mode: Cmd+Shift+S to hide UI. Prefer sharing a tab/window in Meet; Cue uses content protection to avoid capture.
+- Performance: keep “Monitor” off during interviews unless needed.
+- Troubleshoot quickly: http://127.0.0.1:8001/health should return ok; ensure `ollama serve` is running and a model exists (e.g., `gemma3:1b`).
 ---
 ❤️ Why Cue?
 

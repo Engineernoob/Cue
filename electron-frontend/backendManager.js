@@ -127,7 +127,14 @@ class BackendManager {
       // Start the backend process
       this.backendProcess = spawn(this.pythonCmd, ['main.py'], {
         cwd: this.backendPath,
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          // Ensure fast, low-latency STT by default; user can override via env
+          WHISPER_MODEL_SIZE: process.env.WHISPER_MODEL_SIZE || 'tiny',
+          WHISPER_DEVICE: process.env.WHISPER_DEVICE || 'cpu',
+          WHISPER_COMPUTE_TYPE: process.env.WHISPER_COMPUTE_TYPE || 'int8'
+        }
       });
 
       // Handle backend output
