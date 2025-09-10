@@ -96,6 +96,7 @@ function sendChatMessage() {
 let audioContext = null;
 let mediaStream = null;
 let scriptNode = null;
+let silentGain = null;
 
 function float32ToBase64(float32Array) {
   const buffer = new ArrayBuffer(float32Array.length * 4);
@@ -150,7 +151,11 @@ async function startAudioCapture() {
     };
 
     source.connect(scriptNode);
-    scriptNode.connect(audioContext.destination);
+    // Route through a zero-gain node to avoid any audible feedback
+    silentGain = audioContext.createGain();
+    silentGain.gain.value = 0;
+    scriptNode.connect(silentGain);
+    silentGain.connect(audioContext.destination);
   } catch (err) {
     console.error("Microphone error:", err);
   }
@@ -162,6 +167,10 @@ function stopAudioCapture() {
       scriptNode.disconnect();
       scriptNode.onaudioprocess = null;
       scriptNode = null;
+    }
+    if (silentGain) {
+      try { silentGain.disconnect(); } catch {}
+      silentGain = null;
     }
     if (audioContext) {
       audioContext.close();

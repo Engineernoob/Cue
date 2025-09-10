@@ -42,10 +42,10 @@ sudo apt install python3 python3-pip
 ```
 
 ### Port Already in Use
-If port 8000 is busy:
+If port 8001 is busy:
 ```bash
 # Kill existing process
-lsof -ti:8000 | xargs kill -9
+lsof -ti:8001 | xargs kill -9
 
 # Or change port in config.js
 ```
