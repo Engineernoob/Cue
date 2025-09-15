@@ -1,10 +1,14 @@
-import "./App.css";
+import { useState } from "react";
 import CueBar from "../src/components/Cuebar";
+import CuePanel from "./components/CuePanel";
 
 function App() {
+  const [showPanel, setShowPanel] = useState(true);
+
   return (
-    <div className="w-screen h-screen flex items-center justify-center">
-      <CueBar />
+    <div className="w-screen h-screen">
+      <CueBar showPanel={showPanel} setShowPanel={setShowPanel} />
+      <CuePanel show={showPanel} />
     </div>
   );
 }

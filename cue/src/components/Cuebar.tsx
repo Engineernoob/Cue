@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Pause, Mic, Brain, Eye, EyeOff } from "lucide-react"; // icons
+import { Pause, Mic, Brain, Eye, EyeOff } from "lucide-react";
 
-export default function CueBar() {
+interface CueBarProps {
+  showPanel: boolean;
+  setShowPanel: (value: boolean) => void;
+}
+
+export default function CueBar({ showPanel, setShowPanel }: CueBarProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [showPanel, setShowPanel] = useState(true);
 
   return (
     <motion.div
