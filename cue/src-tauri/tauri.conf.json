@@ -12,9 +12,13 @@
   "app": {
     "windows": [
       {
-        "title": "cue",
+        "label": "main",
+        "title": "Cue",
         "width": 800,
-        "height": 600
+        "height": 100,
+        "decorations": false,
+        "resizable": true,
+        "alwaysOnTop": true
       }
     ],
     "security": {
