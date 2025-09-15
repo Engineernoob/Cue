@@ -1,10 +1,18 @@
+import { useEffect, useState } from "react";
+import { initSocket } from "../services/socket";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface CuePanelProps {
-  show: boolean;
-}
+export default function CuePanel({ show }: { show: boolean }) {
+  const [transcripts, setTranscripts] = useState<string[]>([]);
 
-export default function CuePanel({ show }: CuePanelProps) {
+  useEffect(() => {
+    initSocket((msg) => {
+      if (msg.type === "transcript") {
+        setTranscripts((prev) => [...prev, msg.text]);
+      }
+    });
+  }, []);
+
   return (
     <AnimatePresence>
       {show && (
@@ -13,32 +21,16 @@ export default function CuePanel({ show }: CuePanelProps) {
           initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 60 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="fixed top-24 right-10 w-[380px] rounded-2xl bg-black/40 backdrop-blur-md shadow-xl border border-white/20 p-4 text-white"
+          transition={{ duration: 0.25 }}
+          className="fixed top-24 right-10 w-[380px] h-[500px] rounded-2xl bg-black/40 backdrop-blur-md shadow-xl border border-white/20 p-4 text-white overflow-y-auto"
         >
-          <h2 className="font-semibold flex items-center space-x-2 mb-2">
-            <span>✨</span>
-            <span>Live insights</span>
-          </h2>
-
-          <div className="text-sm space-y-3">
-            <div>
-              <h3 className="font-medium">API rollout timeline</h3>
-              <ul className="list-disc list-inside text-white/80">
-                <li>Neel gave an update on QA blockers</li>
-                <li>You discussed next steps for rollout</li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-medium">Actions</h3>
-              <ul className="list-disc list-inside text-white/80">
-                <li>📘 Define E2E testing</li>
-                <li>❓ Fix invalid token error in QA</li>
-                <li>💬 Suggest follow-up questions</li>
-                <li>✨ What should I say next?</li>
-              </ul>
-            </div>
+          <h2 className="font-semibold mb-3">✨ Live Transcript</h2>
+          <div className="space-y-2 text-sm">
+            {transcripts.map((t, i) => (
+              <p key={i} className="text-white/80">
+                {t}
+              </p>
+            ))}
           </div>
         </motion.div>
       )}
