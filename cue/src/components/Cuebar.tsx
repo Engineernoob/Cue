@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-export default function Overlay() {
+export default function Cuebar() {
   const [query, setQuery] = useState("");
 
   return (
