@@ -342,6 +342,10 @@ async def handle_audio_chunk(websocket: WebSocket, message: Dict[str, Any]):
                 })
                 logging.info(f"Transcribed: {full_transcript}")
 
+                #🚀 Auto-suggestions
+                if session_active:
+                    asyncio.create_task(auto_llm_suggestion(websocket, full_transcript))
+
     except Exception as e:
         logging.error(f"Error processing audio chunk: {e}", exc_info=True)
         await websocket.send_json({"type": "transcript_error", "message": str(e)})
@@ -389,6 +393,10 @@ async def handle_image_data(websocket: WebSocket, message: Dict[str, Any]):
                 })
             
             logging.info(f"OCR Result: {extracted_text[:100]}...")
+
+            # 🚀 Auto-suggestions
+        if session_active:
+            asyncio.create_task(auto_llm_suggestion(websocket, extracted_text))
 
     except Exception as e:
         logging.error(f"Error processing image data for OCR: {e}", exc_info=True)
@@ -521,7 +529,6 @@ async def handle_llm_query(websocket: WebSocket, message: Dict[str, Any]):
                 "timestamp": time.time()
             })
             logging.info(f"LLM Response Complete: {full_llm_response}")
-
     except requests.exceptions.ConnectionError as e:
         logging.error(f"Could not connect to Ollama server at {OLLAMA_HOST}: {e}")
         await websocket.send_json({"type": "llm_response_error", "message": "Could not connect to Ollama server. Please ensure Ollama is running."})
@@ -531,6 +538,67 @@ async def handle_llm_query(websocket: WebSocket, message: Dict[str, Any]):
     except Exception as e:
         logging.error(f"Unexpected error during LLM query: {e}", exc_info=True)
         await websocket.send_json({"type": "llm_response_error", "message": f"An unexpected error occurred: {e}"})
+
+
+async def auto_llm_suggestion(websocket: WebSocket, latest_text: str):
+    """Generate an automatic coaching hint when session is active."""
+    context_type = detect_context_type(get_current_context())
+    query = f"Provide a short helpful hint based on this: {latest_text}"
+
+    prompt = build_neurodivergent_prompt(get_current_context(), query, context_type)
+
+    try:
+        ollama_api_url = f"{OLLAMA_HOST}/api/generate"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": True,
+            "options": {
+                "temperature": 0.7,
+                "num_predict": 120
+            }
+        }
+
+        response_chunks = []
+        with requests.post(ollama_api_url, headers=headers, json=payload, stream=True) as response:
+            response.raise_for_status()
+            for chunk in response.iter_lines():
+                if chunk:
+                    try:
+                        json_chunk = json.loads(chunk.decode('utf-8'))
+                        token = json_chunk.get("response", "")
+                        done = json_chunk.get("done", False)
+
+                        if token:
+                            response_chunks.append(token)
+                            await websocket.send_json({
+                                "type": "auto_hint_chunk",
+                                "text_chunk": token
+                            })
+                        if done:
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            full = "".join(response_chunks)
+            if full.strip():
+                add_to_context("auto_hint", full)
+                await websocket.send_json({
+                    "type": "auto_hint_complete",
+                    "text": full,
+                    "timestamp": time.time()
+                })
+                logging.info(f"Auto-Hint Complete: {full}")
+    except requests.exceptions.ConnectionError as e:
+        logging.error(f"Could not connect to Ollama server at {OLLAMA_HOST}: {e}")
+        await websocket.send_json({"type": "auto_hint_error", "message": "Could not connect to Ollama server for auto-hint."})
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error calling Ollama API for auto-hint: {e}", exc_info=True)
+        await websocket.send_json({"type": "auto_hint_error", "message": f"Error from Ollama for auto-hint: {e}"})
+    except Exception as e:
+        logging.error(f"Unexpected error during auto-hint: {e}", exc_info=True)
+
 
 if __name__ == "__main__":
     import uvicorn

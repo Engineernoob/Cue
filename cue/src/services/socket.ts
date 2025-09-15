@@ -1,37 +1,55 @@
-let socket: WebSocket | null = null;
+// src/services/route.ts
+let ws: WebSocket | null = null;
+let listeners: ((msg: any) => void)[] = [];
 
-export function initSocket(
-  onMessage: (msg: any) => void,
-  onError?: (err: any) => void
-) {
-  socket = new WebSocket("ws://127.0.0.1:8001/ws");
+export function connect() {
+  if (ws && ws.readyState === WebSocket.OPEN) return;
 
-  socket.onopen = () => console.log("✅ Connected to Cue backend");
-  socket.onmessage = (event) => {
+  ws = new WebSocket("ws://127.0.0.1:8001/ws");
+
+  ws.onopen = () => {
+    console.log("✅ Connected to Cue backend");
+  };
+
+  ws.onmessage = (event) => {
     try {
-      const data = JSON.parse(event.data);
-      onMessage(data);
-    } catch (e) {
-      console.error("Invalid JSON from backend", e);
+      const msg = JSON.parse(event.data);
+      listeners.forEach((cb) => cb(msg));
+    } catch (err) {
+      console.error("❌ Failed to parse message:", err);
     }
   };
-  socket.onerror = (err) => {
-    console.error("Socket error:", err);
-    onError?.(err);
+
+  ws.onclose = () => {
+    console.log("❌ Disconnected from Cue backend");
+    ws = null;
   };
-  socket.onclose = () => console.log("❌ Disconnected from backend");
 }
 
-export function sendMessage(msg: object) {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify(msg));
+export function onMessage(cb: (msg: any) => void) {
+  listeners.push(cb);
+  return () => {
+    listeners = listeners.filter((fn) => fn !== cb);
+  };
+}
+
+export function sendMessage(payload: object) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(payload));
   } else {
-    console.warn("⚠️ Socket not connected");
+    console.warn("⚠️ WebSocket not connected");
   }
 }
 
-export function closeSocket() {
-  if (socket) {
-    socket.close();
-  }
+// Session helpers
+export function startSession() {
+  sendMessage({ type: "start_session" });
+}
+
+export function stopSession() {
+  sendMessage({ type: "stop_session" });
+}
+
+export function sendQuery(query: string, style?: string) {
+  sendMessage({ type: "llm_query", query, style });
 }
