@@ -1,0 +1,18 @@
+{
+  "default": null,
+  "permission": [
+    {
+      "identifier": "app-main",
+      "description": "Main app commands",
+      "commands": {
+        "allow": [
+          "window:create",
+          "window:close",
+          "window:show",
+          "window:hide"
+        ],
+        "deny": []
+      }
+    }
+  ]
+}
